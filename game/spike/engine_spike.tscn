@@ -1,0 +1,114 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://spike/engine_spike.gd" id="1_spike"]
+
+[sub_resource type="Theme" id="Theme_spike"]
+default_font_size = 28
+
+[node name="EngineSpike" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = SubResource("Theme_spike")
+script = ExtResource("1_spike")
+
+[node name="Margin" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 32
+theme_override_constants/margin_top = 64
+theme_override_constants/margin_right = 32
+theme_override_constants/margin_bottom = 32
+
+[node name="Box" type="VBoxContainer" parent="Margin"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="Title" type="Label" parent="Margin/Box"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 40
+text = "Engine spike"
+
+[node name="Status" type="Label" parent="Margin/Box"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Starting…"
+
+[node name="EloRow" type="HBoxContainer" parent="Margin/Box"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="EloLabel" type="Label" parent="Margin/Box/EloRow"]
+layout_mode = 2
+text = "Elo"
+
+[node name="EloSpin" type="SpinBox" parent="Margin/Box/EloRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+min_value = 1320.0
+max_value = 3190.0
+step = 10.0
+value = 1500.0
+
+[node name="FullStrength" type="CheckBox" parent="Margin/Box"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Full strength"
+
+[node name="PlayButton" type="Button" parent="Margin/Box"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 88)
+layout_mode = 2
+disabled = true
+text = "Play engine move"
+
+[node name="MateCheckButton" type="Button" parent="Margin/Box"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 88)
+layout_mode = 2
+disabled = true
+text = "Mate-in-1 check"
+
+[node name="QgaCheckButton" type="Button" parent="Margin/Box"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 88)
+layout_mode = 2
+disabled = true
+text = "QGA trap check"
+
+[node name="NewGameButton" type="Button" parent="Margin/Box"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 88)
+layout_mode = 2
+disabled = true
+text = "New game"
+
+[node name="MovesLabel" type="Label" parent="Margin/Box"]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 3
+
+[node name="BestMoveLabel" type="Label" parent="Margin/Box"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="EvalLabel" type="Label" parent="Margin/Box"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="SpeedLabel" type="Label" parent="Margin/Box"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="CheckLabel" type="Label" parent="Margin/Box"]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 3
