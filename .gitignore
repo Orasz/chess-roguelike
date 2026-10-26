@@ -1,0 +1,9 @@
+.superpowers/
+.godot/
+/build/
+game/bin/macos/
+game/bin/android/
+native/*.nnue
+*.os
+*.o
+.sconsign.dblite

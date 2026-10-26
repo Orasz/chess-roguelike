@@ -1,0 +1,426 @@
+# Chess Roguelike — Design
+
+- **Date:** 2026-10-26
+- **Status:** draft, waiting for approval
+- **Working title:** `chess-roguelike` (the final name is still open)
+
+## 1. Intent
+
+This is a free, open-source mobile game. It is a roguelike set on a 2D, Pokémon-style overworld, and
+every fight is played on a chessboard.
+
+You walk a top-down map. When you bump into an enemy, a Pokémon-style battle screen opens, and the
+battle is a chess position. Each run is shaped by the chess opening you pick at the start, the way a
+Pokémon starter shapes a playthrough, and each run differs from the last, as in Slay the Spire or
+Balatro.
+
+The game also teaches. It has to work for complete beginners (Elo 0) and still challenge strong
+players (2000+). It gets harder on two levels: inside a run, and across runs.
+
+The author's own words for the goal: *"a roguelike with 2D graphics, centred on chess."* Success
+means **publishing it on the Google Play Store and having many players**. The game is free for
+ever. Any income comes only from donations.
+
+## 2. Audience
+
+- Anyone from Elo 0 to 2000+.
+- On first launch the game finds out the player's level:
+  - **Beginners** go through a tutorial that teaches the rules: how the pieces move, check,
+    checkmate, and so on.
+  - **Experienced players** take a placement test, a series of positions of rising difficulty that
+    gives a starting rating.
+  - The game routes them by asking *"Do you already know chess?"*.
+- The rating then updates as the player plays. It drives puzzle difficulty and opponent strength.
+
+## 3. Goals, non-goals, anti-goals
+
+**Goals**
+
+- A polished, published Android game with many players.
+- Chess feels like *combat*, and a run feels like an RPG adventure.
+- It teaches openings, middlegame ideas and endgames in a natural order.
+- A full run takes **30 minutes, 60 at most**, and fits a phone session.
+
+**Non-goals**
+
+- Making money. There are no ads, no in-app purchases and no pay-to-win.
+- iOS at launch. It may come later, so nothing in the code should rule it out.
+- Online multiplayer. It was never discussed and is not in scope.
+
+**Anti-goals** (*Claude's call*: the author had no firm view yet, so these are proposals for the
+author to check)
+
+- It must not feel like a puzzle app with a map bolted on. HP, items and route choices have to
+  matter.
+- It must not punish beginners without teaching them. Every mistake costs HP **and** comes with an
+  explanation.
+- A run must never run past about an hour, and it must survive being interrupted at any point.
+- It must not use Nintendo assets, and it must not read as a legally risky Pokémon clone.
+
+## 4. Core loop
+
+1. **Pick a starter opening** (see §7).
+2. **Explore** the zone map, a top-down, Pokémon-style 2D overworld.
+3. **Touch an enemy.** A Pokémon-style battle screen opens. The enemy's name plate and HP bar sit at
+   the top with its sprite, the chessboard is in the middle, the player's plate and HP sit below,
+   then the item bar and a dialogue box.
+4. **Resolve the battle** (see §5).
+5. **Collect rewards** (see §8) and keep exploring. Reach the zone guardian, then the next zone.
+6. After the last zone, play the **final boss**.
+7. When the run ends, **unlock new openings** for future runs.
+
+Mockups from the brainstorm are in `.superpowers/brainstorm/` (`core-loop.html`,
+`progression.html`, `orientation.html`). They show layout only. The final art will be different
+(see §11).
+
+## 5. Encounters
+
+| Encounter | What happens | Win condition |
+|---|---|---|
+| **Basic enemy** | A puzzle: one position, "find the right move" | Play the correct move |
+| **Strong enemy** | A game already in progress, which must be finished quickly | Win the game (see §6) |
+| **Zone guardian** | Closes each zone. Stronger than the other enemies in the zone, but not a full game | *Claude's call*, see below |
+| **Final boss** | A **full game**, played only once per run, at the end | Win the game (see §6) |
+
+- **Theory encounter** (the author's decision: by the end of a run the player should be able to
+  *play* the starter opening, not just recognise its positions). Zone 1 mixes puzzles with
+  encounters where the player plays the opening's main-line moves.
+  - When the player leaves the line, the game says so and explains why the book move is better.
+  - Each opening needs a few main lines plus a few sentences about its plans. This content is
+    written once per opening, in Italian and English.
+  - The final boss game starts from move 1, so the player has to reproduce the opening for real.
+  - *Claude's call:* named endgame techniques (Lucena, Philidor) and middlegame "plans" are not
+    taught explicitly at launch. Zones 2 and 3 teach through puzzles and their explanations, and
+    written lessons can come later.
+- **Wrong answer to a puzzle.** The player loses HP and is shown the correct move with an
+  explanation.
+  - *Claude's call:* the puzzle then ends and the enemy drops nothing.
+- **Explanations are generated by the game** (the author's decision). The game draws an arrow on the
+  correct move, names the puzzle theme (fork, pin, mate in one…), and builds one sentence from the
+  engine line, using sentence templates in Italian and English, for example "after Nxe5 you lose the
+  knight".
+  - This works across tens of thousands of puzzles and in every game battle.
+  - The hand-written sentence in the mockup is aspirational, not the bar.
+  - Only the tutorial and the per-opening theory text are written by hand.
+  - Enemy intro lines are templates too, filled with the enemy's name and the theme or opening.
+- **Strong enemies "finish fast".** The game starts from a position that is already under way.
+  - *Claude's call:* a short clock and/or a move limit. The mockup showed 2:30 and 12 moves.
+  - *Claude's call:* start from positions where the player is somewhat better, so the lesson is
+    *converting an advantage*.
+- **Final boss.**
+  - The time control is **blitz or rapid, 5 or 10 minutes** (the author's decision).
+  - *Claude's call:* the game starts from the player's starter opening, and the boss answers with
+    that opening's main lines, so the starter matters to the very end.
+- **Zone guardian** (*Claude's call*, not explicitly confirmed). It is a strong-enemy encounter with
+  a higher difficulty and a better reward. It gates the exit of the zone.
+
+## 6. Health and "HP as advantage"
+
+- **Run HP.** The player has one HP pool for the whole run. Damage carries between fights, and
+  reaching 0 ends the run.
+- **HP as advantage** (proposed by Claude; the author called it "bellissima" — beautiful).
+  - In any battle that is a game rather than a puzzle, the enemy's HP bar **is the player's
+    advantage on the board**.
+  - As the player gains material or a better position, the enemy's bar drops.
+  - When the advantage becomes decisive, the enemy is defeated, even without checkmate. This keeps
+    games short and makes the evaluation readable for beginners.
+- *Claude's call:* the player's side of that bar is their **run HP**.
+  - The player takes damage when their own moves lose evaluation. In engine terms that is
+    centipawn loss, meaning mistakes hurt and good moves don't.
+  - Damage is permanent for the run. A recovered position does not heal the player.
+  - So arriving at the boss with low HP is dangerous, as in Slay the Spire, and saved potions
+    matter.
+- **Left to the builder:**
+  - the decisive-advantage threshold;
+  - the damage curve;
+  - puzzle damage, which should scale with the zone;
+  - what flagging or a draw does to each side;
+  - smoothing, so engine noise doesn't make the bars jitter.
+
+## 7. Runs, starters and the two levels of progression
+
+**Run structure** (the author's decision): a run follows the life of a game.
+
+- **Zone 1:** your opening.
+- **Zone 2:** middlegame positions typical of that opening.
+- **Zone 3:** endgames. These are generic themes such as "rook endgame" or "two rooks".
+- **Final boss:** a full game.
+
+**Starters**
+
+- At the start of a run the player picks one of **three openings** and plays it for the whole run.
+- Starters include White openings *and* Black defences, for example the Sicilian or the Caro-Kann.
+  **The starter sets the colour the player plays.**
+- The initial three in the mockup (Italian Game, Queen's Gambit, London System) are placeholders.
+
+**Progression levels** (the author's decision: both apply)
+
+- **Inside a run,** each zone is harder than the last, up to the boss.
+- **Across runs,** finishing a run unlocks new openings, and each newly unlocked opening is more
+  demanding than the ones before.
+
+**Duration**
+
+- The target is 30 minutes, 60 at most.
+- *Claude's estimate:* about 12 minutes per zone and 5–10 minutes for the boss, which comes to about
+  45 minutes. A zone holds:
+  - 5–6 puzzles of about 30 seconds each;
+  - about 2 strong enemies of 2–3 minutes each;
+  - the guardian;
+  - the shop.
+
+**Saving** (*Claude's call*, required on mobile)
+
+- The game autosaves continuously and resumes exactly where the player left off, including in the
+  middle of a battle.
+- Clocks pause when the app leaves the foreground.
+
+## 8. Items and economy
+
+**Items**
+
+| Item | Effect | Source |
+|---|---|---|
+| **Potion** | Restores HP | The author |
+| **Rethink** | Replay a move: a second try at a puzzle, or a takeback in a game | The author |
+| **Hint** | Shows which piece to move | Proposed by Claude, accepted |
+
+More items are welcome. The design of further items is left to the builder.
+
+**Sources**
+
+- A defeated enemy drops an item, or coins.
+- A **shop** sells items for coins. Coins are Claude's addition, accepted, because a shop needs a
+  currency.
+- *Claude's call:* shops sit on the map between groups of enemies, like the Slay the Spire
+  merchant.
+- There is **no real money anywhere**. Every item is earned in play.
+- **Left to the builder:** prices, drop rates, inventory size, and whether items are usable in every
+  kind of battle.
+
+## 9. Overworld map
+
+**How a map is built** (the author's decision)
+
+- Maps are assembled from **hand-made chunks**: clearings, bridges, groves, the shop, the boss
+  castle. Each run puts them together differently, the way Binding of Isaac and Spelunky do.
+- Everything changes between runs, the map included. The map's setting depends on the
+  **opening** and the **colour** played.
+- *Claude's idea, not confirmed:* the map is daytime when you play White and night-time when you
+  play Black.
+- *Claude's call:* **one shared set of chunks** serves every opening. Each opening gets its own
+  tileset or palette, plus day or night, rather than its own hand-made biome. Adding an opening
+  should cost chess content, not an art job, and the chunk system is designed for that from day
+  one.
+- *Claude's call:* **one shared enemy roster**, with names and intro lines themed per opening.
+
+**Encounter placement** (*Claude's call*)
+
+- Enemies stand on the main path, in the Pokémon trainer style, and also in optional spots such as
+  tall grass or side paths.
+- Optional fights are the risk-for-reward choice.
+- The guardian blocks the zone exit.
+
+**Controls:** portrait and one-handed, with tap-to-move. A virtual d-pad is optional, and the
+builder decides.
+
+## 10. Platform and technology
+
+**Decided by the author**
+
+- Android first. iOS may come later.
+- Portrait orientation, playable with one hand.
+- **Godot 4**, scripted in GDScript.
+- The whole project is **open source under GPLv3**.
+
+**Claude's calls, accepted**
+
+- Italian and English at launch.
+- Puzzles come from the Lichess database.
+- Opponents are Stockfish.
+
+**Chess content: the Lichess puzzle database**
+
+- Source: https://database.lichess.org/. The licence is CC0 (verified on the site).
+- About 6.16 million puzzles, with these fields:
+  - `FEN`, `Moves`, `Rating`, `RatingDeviation`, `Popularity`, `NbPlays`, `Themes`, `GameUrl`,
+    `OpeningTags`.
+- `Themes` covers the encounter types:
+  - `oneMove` and `mateIn1` fit basic enemies;
+  - `opening`, `middlegame` and the endgame themes fit the zones.
+- `OpeningTags` is set only for puzzles that start before move 20. Opening and middlegame zones can
+  filter by the starter's tags, while endgame zones use theme-based pools. That matches the run
+  structure.
+- `FEN` is the position *before* the opponent's move, and `Moves` starts with that move.
+- The full set is about 885 MB, so **the app ships a filtered, compact subset** built by an offline
+  script. The size budget is the builder's to set.
+
+**Engine: Stockfish**
+
+- Licence: GPLv3 (verified in `Copying.txt`). This is why the whole game is GPLv3.
+- There is precedent for GPLv3 Android apps that bundle Stockfish: Lichess mobile and DroidFish.
+- Strength limiting uses `UCI_LimitStrength` / `UCI_Elo`.
+- ⚠ **Not verified in this brainstorm:** recent Stockfish versions set a floor on `UCI_Elo` of
+  about 1320. Beginner-level opponents will probably need extra weakening, such as choosing among
+  MultiPV candidates with noise, or a simple engine of our own for the lowest levels. The approach
+  is left to the builder.
+
+**⚠ Biggest technical risk: running Stockfish inside Godot 4 on Android**
+
+- Android 10 and later block running a bundled executable from the app's data directory, so the
+  usual desktop approach (launching a separate engine process) does not work.
+- No maintained Stockfish plugin for Godot 4 on Android was found.
+- The likely route is a **custom GDExtension**, built from godot-cpp (MIT) plus the Stockfish
+  sources compiled with the Android NDK. References:
+  - Limpid Chess (https://github.com/Hatscat/limpidchess), GPLv3. It has a `native/` folder and a
+    `StockfishGD` binding for arm64, but its Android build is untested.
+  - Lichess's `multistockfish` plugin (https://pub.dev/packages/multistockfish), Stockfish 19 on
+    Android, GPLv3.
+- Fallbacks if the GDExtension fails: a Godot Android plugin that calls Stockfish through JNI, or an
+  engine of our own.
+- **This is the first thing to prove, on a real arm64 device** (see §14).
+
+**Opening lines.** The theory encounters and the boss book need main lines for each starter.
+Lichess publishes an openings dataset (`lichess-org/chess-openings`) that may serve as the base.
+⚠ Its licence has not been verified yet. The plan text is hand-written either way.
+
+**Telemetry and Google services** (*Claude's call*)
+
+- No proprietary SDKs: no Firebase, no Play Games Services, no analytics, no crash-reporting
+  service.
+- Saves stay on the phone.
+- Tuning comes from a closed beta.
+- This keeps the project free and GPL-clean, and it keeps an F-Droid listing possible later.
+  F-Droid is not a launch target, so build reproducibility is not required at launch, but nothing
+  should rule it out.
+
+**Left to the builder**
+
+- Godot version and minimum Android API.
+- Chess rules and move generation: write our own in GDScript or use a library.
+- The rating system for the player.
+- The design of the tutorial and the placement test.
+
+## 11. Art and audio
+
+**Style** (the author's decision): GBA-era pixel art (the Pokémon Emerald and FireRed look), with
+16×16 tiles. The author cannot draw and will use ready-made asset packs.
+
+**Constraints**
+
+- The art must be redistributable in a public GPLv3 repository:
+  - CC0, CC BY 4.0, CC BY-SA 4.0 and OFL (for fonts) are fine.
+  - Treat CC BY-SA 3.0 as incompatible.
+  - NC and ND licences are out.
+  - Packs that allow use in a game but forbid redistributing the files cannot go in the repo.
+- There must be no Nintendo or fan-ripped Pokémon assets.
+- Keep a `CREDITS` file.
+
+**Candidates.** All were verified as CC0 or OFL on their own pages. None was checked visually,
+because the researcher could not see images, so the previews need checking.
+
+| Area | Pack | Notes |
+|---|---|---|
+| Everything (best single family) | **Ninja Adventure** — https://pixel-boy.itch.io/ninja-adventure-asset-pack | CC0, 16×16. Tiles, 50+ characters, monsters, bosses, items, UI, fonts, music, SFX, and a Godot 4 sample project. Closer to Zelda than Pokémon |
+| Overworld + characters (coherent pair) | **Puny World** + **Puny Characters** (Shade) — https://opengameart.org/content/16x16-puny-world-tileset, https://opengameart.org/content/puny-characters | CC0. Tall grass, castle and shop not confirmed |
+| Castle | **Zelda-like tilesets** (ArMM1998) — https://opengameart.org/content/zelda-like-tilesets-and-sprites | CC0 |
+| Board pieces | **Pixel Chess Pieces** (SpicyGame) — https://spicygame.itch.io/chess-pieces | CC0, 16×16, white, black and neutral |
+| UI | **Kenney UI Pack – Pixel Adventure** — https://kenney.nl/assets/ui-pack-pixel-adventure | CC0 |
+| Item icons | Ninja Adventure items; **16x16 Beginner Item Pack** — https://benjaminkford.itch.io/16x16-beginner-pixel-art-item-pack; **1-bit Pixel Icons** — https://nikoichu.itch.io/pixel-icons | CC0. No lightbulb or undo icon was confirmed, so those may need drawing or editing |
+| Font | **Press Start 2P** (OFL) | 8 px grid, fits the GBA look. Check the Italian accented glyphs |
+
+**Known gap: enemy battle sprites**
+
+- The enemies are anthropomorphic chess pieces, such as the "Greedy Pawn" or the "Knight of the
+  Centre". No openly licensed art for them exists.
+- **Decided:** the budget is zero, so the sprites are made by editing CC0 pieces, adding faces and
+  limbs. Candidates are SpicyGame's pieces and Puny Monsters, both of which allow derivatives.
+  Ninja Adventure's monsters and bosses are the style reference.
+
+**Audio** (*Claude's call*, not discussed): the Ninja Adventure music and SFX, which are CC0.
+
+## 12. Licensing and distribution
+
+- The code is GPLv3. Publishing the source repository publicly satisfies Stockfish's licence.
+- The puzzle data is CC0.
+- The art and fonts are under the licences in §11, listed in `CREDITS`.
+- Donations come through an external link, for example GitHub Sponsors or Ko-fi.
+  - ⚠ **To verify before release:** Google Play's payments policy on donation links in a free app.
+
+## 13. Decision log
+
+**Decided by the author**
+
+- 2D Pokémon-style overworld, with a Pokémon-style battle screen in which the battle is a chessboard.
+- Basic enemies are one-move puzzles. Strong enemies are a game already in progress, to be
+  finished fast. The final boss is a full game at 5 or 10 minutes, and only the final boss.
+- A wrong answer costs HP and shows the correct move with an explanation.
+- Roguelike runs. You pick one of three openings as your starter and play it all run. Finishing runs
+  unlocks new openings.
+- Difficulty rises inside a run and across runs.
+- Items exist (potion, replay a move, hint). They drop from enemies or are bought in a shop.
+- The game covers Elo 0 to 2000+: a tutorial for beginners, a placement test for experienced
+  players.
+- A run goes opening, then middlegame, then endgame, then boss.
+- A run lasts 30 minutes, 60 at most.
+- Maps change every run, depending on opening and colour, and are built from hand-made chunks.
+- Mobile, Android first, Godot 4, portrait.
+- Free for ever, donations only, open source under GPLv3.
+- GBA-style pixel art from asset packs.
+- Explanations are generated by the game. Only the tutorial and the opening theory are written by
+  hand.
+- By the end of a run the player can play the starter opening, which is taught through theory
+  encounters.
+- An early open beta with one opening and a short run, then the game grows.
+- Built by the author with Claude, in spare time, with zero budget. Enemy sprites are made by
+  editing CC0 pieces, and testing happens on the author's own Android phone.
+
+**Claude's calls (please check)**
+
+- The anti-goals in §3.
+- Puzzle failure ends the encounter with no drop.
+- Strong enemies: a short clock or move limit, starting from a favourable position.
+- The boss starts from the starter opening.
+- The zone guardian is a stronger non-full-game fight.
+- Player damage in games equals evaluation lost by their own moves, and it is permanent for the run.
+- Autosave everywhere, with clocks pausing in the background.
+- Shops sit between groups of enemies.
+- Mandatory enemies on the path, optional ones off it.
+- Day for White, night for Black.
+- Audio from Ninja Adventure.
+- One shared chunk set and enemy roster, themed per opening.
+- No proprietary SDKs or telemetry, and F-Droid is kept possible.
+- Named endgame techniques and middlegame plans are not taught explicitly at launch.
+
+## 14. Left to the builder, and suggested order
+
+**Left to the builder:** all tuning numbers, the damage formulas, the rating system, the tutorial
+and placement-test design, chunk format and assembly rules, item prices and drop rates, the chess
+move-generation approach, the puzzle data pipeline and its size budget, and the input scheme.
+
+**Suggested order** (*Claude's call*)
+
+1. **Engine spike.** Get Stockfish running inside Godot 4 on a real Android arm64 phone, play a
+   move at a chosen strength, and read the evaluation. If this fails, choose a fallback before
+   anything else.
+2. **Vertical slice.** Build one zone with placeholder art (Ninja Adventure): a map assembled from
+   a few chunks, a few Lichess puzzles, one theory encounter, one strong enemy with HP as
+   advantage, run HP, one item, and save/resume.
+3. **Open beta** (the author's decision), right after the slice. One opening and a short run,
+   published through the Play Store's testing tracks. This step also sets up the release pipeline:
+   - signing;
+   - the store listing;
+   - the donation-link policy check;
+   - the closed-testing period that new personal developer accounts must complete before going
+     public (currently about two weeks with a tester group; check the Play Console's current rules).
+4. Then grow the game: the full run, more starters and unlocks, the tutorial and placement test,
+   the shop, the other zones, the boss, localisation, and art polish.
+
+## 15. Open questions
+
+- The final name of the game.
+- The list and unlock order of the starter openings: which three come first, and which are White
+  and which are Black.
+- What unlocks a new opening: beating the final boss only, or any finished run.
+
+None of these changes how the plan is structured. They can be settled while building.
