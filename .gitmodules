@@ -1,0 +1,7 @@
+[submodule "native/godot-cpp"]
+	path = native/godot-cpp
+	url = https://github.com/godotengine/godot-cpp
+[submodule "native/thirdparty/Stockfish"]
+	path = native/thirdparty/Stockfish
+	url = https://github.com/official-stockfish/Stockfish
+	ignore = untracked

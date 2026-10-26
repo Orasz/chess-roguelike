@@ -1,0 +1,44 @@
+#!/usr/bin/env python
+import os
+
+LIB = "stockfish_gd"
+SF = "thirdparty/Stockfish/src"   # submodule at sf_19; NOT added to CPPPATH (its memory.h would shadow <memory.h>)
+NET = "nn-1a298aa575a0.nnue"      # INCBIN resolves it from the compiler's cwd = this directory
+
+env = SConscript("godot-cpp/SConstruct", {"api_version": "4.7"})
+if env["platform"] == "macos" and env["arch"] != "arm64":
+    print("Build macOS with arch=arm64")
+    Exit(1)
+
+gd = env.Clone()                  # Godot-side code; never append to env itself (it leaks into godot-cpp)
+gd.Append(CPPPATH=["src/"])
+
+sf = env.Clone()                  # Stockfish + bridge share exactly these defines
+sf.Append(CPPDEFINES=["IS_64BIT", "USE_POPCNT", ("USE_NEON", 8)])
+sf.Append(CXXFLAGS=["-fconstexpr-steps=500000000"])
+sf.Append(CCFLAGS=["-O3", "-funroll-loops"])
+if env["platform"] == "macos":
+    sf.Append(CPPDEFINES=["USE_NEON_DOTPROD"], CCFLAGS=["-march=armv8.2-a+dotprod"])
+
+
+def cpp(pattern, exclude=()):
+    return [f for f in Glob(pattern) if os.path.basename(str(f)) not in exclude]
+
+
+sf_src = (cpp(SF + "/*.cpp", exclude=("main.cpp",))
+          + cpp(SF + "/nnue/*.cpp", exclude=("network.cpp",))
+          + cpp(SF + "/nnue/features/*.cpp")
+          + cpp(SF + "/syzygy/*.cpp")
+          + cpp("bridge/*.cpp"))
+sf_objs = [sf.SharedObject(s) for s in sf_src]
+net_obj = sf.SharedObject(SF + "/nnue/network.cpp")
+sf.Depends(net_obj, NET)          # SCons does not scan .incbin
+
+gd_objs = [gd.SharedObject(s) for s in Glob("src/*.cpp")]
+
+suffix = env["suffix"].replace(".dev", "").replace(".universal", "")
+lib = gd.SharedLibrary(
+    "../game/bin/{}/{}{}{}{}".format(env["platform"], env.subst("$SHLIBPREFIX"), LIB, suffix,
+                                     env.subst("$SHLIBSUFFIX")),
+    source=gd_objs + sf_objs + [net_obj])
+Default(lib)
