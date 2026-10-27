@@ -105,32 +105,58 @@ These are inputs to the open-beta plan.
 - **The net strategy spike comes first.** The slice did not change the numbers of 0001: the APK
   is 128 MB, and the app uses about 450 MiB in total. The options are still the light net and
   `EvalFile` from `user://`, as 0001 describes.
-- **Tuning, from playing two runs:**
-  - **The strong enemy cannot be beaten in 12 moves, even with perfect play.** One run followed
-    the game's own hint at every move and won the queen on move 2. It still ended at +786 against
-    the +800 needed, and the enemy escaped. Stockfish's normalised centipawns put a queen-up
-    middlegame near +500. Retune `DECISIVE_CP` or `STRONG_MOVE_LIMIT`, or use a win-chance
-    threshold.
-  - **Strong battles are expensive.** One battle cost about 58 HP: two mistakes (26 and 17 HP),
-    then the escape (15 HP).
-  - **Every Club puzzle is a mate in one.** All 46 puzzles within reach of a 1200 rating are mate
-    in one, and puzzles repeat across runs.
-  - **The hint can cost HP.** Following the hint once cost 2 HP, because the evaluation moved
-    between two searches. A wider dead zone would absorb that noise.
-  - **The explanation can name a reply the enemy does not play.** It reads "the best reply is
-    Be6", while the enemy picks another move.
-  - **The enemy bar can jump at the first move.** It starts at 1.0 even when `cp_start` is above
-    600. There the bar's own formula gives less (0.5 at +700), so a neutral first move would halve
-    it. This was found by reading the code; the device runs did not show it.
-  - **The theory dialogue goes stale.** It keeps the last "leaves the book" text to the end of the
-    line, and the win shows no text of its own.
-  - **A resumed battle shows nothing in the dialogue.** Its last explanation and arrow are gone.
-  - **The mistake arrow reads as advice.** After the enemy's reply, it can look like "play this
-    now" rather than "you should have played this". The author will judge it.
-  - **Potions went unused.** Both runs ended with potions left.
-  - **A zone takes about 3 minutes of adb play, mandatory encounters only.** The run that tried
-    every encounter and check took 16 minutes. A human will take longer over the puzzles and the
-    strong enemy's moves.
+- **Tuning.** Each note says where it comes from:
+  - *played*: seen on the phone, in the two Club runs;
+  - *data*: read from the shipped JSON;
+  - *code*: read from the source, and not seen on the phone.
+
+  The notes:
+  - **The strong enemy escaped even when the player followed the hint on every move** (played).
+    - Only one battle was played that way: 7DvIR, which starts at +434.
+    - The hints Nd6+ and Qxg2 won the queen on move 2. The evaluation then stayed between +425
+      and +501 through move 6.
+    - It reached +786 at move 12, 14 cp short of +800, and the enemy escaped.
+    - The hint is the engine's line from a 700 ms single-thread search, which is not perfect play.
+      Only 2 of the 80 strong positions were seen.
+    - Still, Stockfish's normalised centipawns put a queen-up middlegame near +500. Converting
+      to +800 within 12 moves looks too strict.
+  - **The opposite case wins at once** (code, data).
+    - Strong records are chosen by the `advantage` theme only.
+    - `StrongEncounter` checks `HpModel.is_decisive(cp_after)` after every player move. So a
+      record that starts at +800 or more wins on the first neutral move.
+    - The two positions seen started at +700 and +434.
+    - Retune `DECISIVE_CP` and `STRONG_MOVE_LIMIT` together, or use a win-chance threshold. Choose
+      the strong records by their starting evaluation as well.
+  - **A strong battle costs 17 HP with best play, and much more with mistakes** (played).
+    - In run 2, with the hint on every move, it cost 17 HP: 2 from engine noise on one move, and 15
+      for the escape.
+    - In run 1 it cost 58 HP. Two mistakes there were made on purpose for the checks: f3 for check 6
+      (26 HP) and Bxf7+ for check 9 (17 HP). The escape added 15 HP.
+  - **Every puzzle in the bank is a mate in one** (data, played).
+    - All 240 puzzles have exactly two moves and the `mateIn1` theme. So this holds at every rating
+      preset, Beginner and Strong too.
+    - The 4 different puzzles met on the phone were all mates in one.
+    - The remedy is content, such as other themes and longer lines, not the rating window.
+    - Puzzles also repeat across runs: it9yP was played in both runs, and Cde1l was dealt in both.
+  - **The hint can cost HP** (played). Following the hint once cost 2 HP, because the evaluation
+    moved between two searches. A wider dead zone would absorb that noise.
+  - **The explanation can name a reply the enemy does not play** (played). It reads "the best reply
+    is Be6", while the enemy picks another move.
+  - **The enemy bar can jump at the first move** (code).
+    - It starts at 1.0 even when `cp_start` is above 600.
+    - There the bar's own formula gives less (0.5 at +700). So a neutral first move would halve it,
+      and a resume would show the lower value.
+    - The device runs did not show it.
+  - **The theory dialogue goes stale** (played). It keeps the last "leaves the book" text to the end
+    of the line, and the win shows no text of its own.
+  - **A resumed battle shows nothing in the dialogue** (played). Its last explanation and arrow are
+    gone.
+  - **The mistake arrow reads as advice** (played). After the enemy's reply, it can look like "play
+    this now" rather than "you should have played this". The author will judge it.
+  - **Potions went unused** (played). Both runs ended with potions left.
+  - **A zone takes about 3 minutes of adb play, mandatory encounters only** (played). The run that
+    tried every encounter and check took 16 minutes. A human will take longer over the puzzles and
+    the strong enemy's moves.
 - **The final application id is a beta decision.** The slice uses
   `io.github.chessroguelike.slice`.
 - **What did not fully pass:**
