@@ -37,3 +37,9 @@ const PICKER_TEMP_AT_MAX := 1.0
 ## Puzzle bank: how far a puzzle's rating may be from the player's, in rating points. The window
 ## widens by this same step when too few puzzles fall inside it.
 const PUZZLE_RATING_WINDOW := 150
+
+## Items: the potion's heal, how many the player holds at most and at the start, and its drop chance.
+const POTION_HEAL := 30
+const POTION_MAX := 3
+const START_POTIONS := 1
+const DROP_CHANCE := {"puzzle": 0.25, "theory": 1.0, "strong": 1.0}
