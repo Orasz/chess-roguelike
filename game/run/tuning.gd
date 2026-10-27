@@ -1,0 +1,29 @@
+class_name Tuning
+extends RefCounted
+## Every tuning number of the vertical slice, as constants. Later tasks append
+## their own groups below the ones here.
+
+## HP: the player's pool, and the flat damage of puzzles, theory and strong encounters.
+const MAX_HP := 100
+const PUZZLE_DAMAGE := 10
+const THEORY_DAMAGE := 5
+const STRONG_FAIL_DAMAGE := 15
+
+## Damage curve: how a move's loss of win chance, in points, becomes HP lost.
+const DAMAGE_DEADZONE_WP := 3.0
+const DAMAGE_PER_WP := 0.5
+const MAX_MOVE_DAMAGE := 30
+
+## Thresholds in centipawns, for the enemy bar and for mate.
+const DECISIVE_CP := 800
+const MIN_BAR_RANGE_CP := 200
+const MATE_CP := 10000
+
+## Strong enemy: the move limit, the search time, and the lines it chooses among.
+const STRONG_MOVE_LIMIT := 12
+const STRONG_SEARCH_MS := 700
+const STRONG_CANDIDATES := 5
+
+## Engine: the search time for explanations, and how long a caller waits for the engine.
+const EXPLAIN_SEARCH_MS := 300
+const ENGINE_WAIT_S := 20.0
