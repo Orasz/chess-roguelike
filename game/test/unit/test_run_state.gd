@@ -68,6 +68,17 @@ func test_potion_rules():
 	assert_eq(r.potions, Tuning.POTION_MAX)
 
 
+func test_a_dead_run_cannot_drink():
+	var r := _run()
+	watch_signals(r)
+	r.take_damage(Tuning.MAX_HP)
+	assert_eq(r.potions, Tuning.START_POTIONS, "the run dies holding a potion")
+	assert_false(r.use_potion())
+	assert_eq([r.hp, r.potions], [0, Tuning.START_POTIONS])
+	r.take_damage(Tuning.MAX_HP)
+	assert_signal_emit_count(r, "died", 1)
+
+
 func test_potion_heals_by_its_amount_and_stops_at_the_maximum():
 	var r := _run()
 	r.take_damage(50)

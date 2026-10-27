@@ -55,9 +55,9 @@ func take_damage(n: int) -> void:
 
 
 ## Drinks a potion for `Tuning.POTION_HEAL` HP, up to the maximum. Returns false, and changes
-## nothing, with no potion or at full HP.
+## nothing, with no potion, at full HP, or once the run is dead (at 0 HP).
 func use_potion() -> bool:
-	if potions <= 0 or hp >= Tuning.MAX_HP:
+	if potions <= 0 or hp <= 0 or hp >= Tuning.MAX_HP:
 		return false
 	potions -= 1
 	hp = mini(hp + Tuning.POTION_HEAL, Tuning.MAX_HP)
