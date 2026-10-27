@@ -54,3 +54,6 @@ const MAX_WAIT_STEP_S := 0.25
 
 ## UI: how long an HP bar takes to move to its new value, in seconds.
 const BAR_TWEEN_S := 0.4
+
+## Player rating: the presets of the new-run menu, by name. The slice has no rating updates.
+const RATING_PRESETS := {"Beginner": 600, "Club": 1200, "Strong": 1800}

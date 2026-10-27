@@ -6,9 +6,14 @@ chess position. It is built with Godot 4, and Android is the first platform.
 The full design is in
 [`docs/superpowers/specs/2026-10-26-chess-roguelike-design.md`](docs/superpowers/specs/2026-10-26-chess-roguelike-design.md).
 
-**Current milestone:** the engine spike. It shows that Stockfish runs inside the game on a real
-Android phone. The plan is in
-[`docs/superpowers/plans/2026-10-26-engine-spike.md`](docs/superpowers/plans/2026-10-26-engine-spike.md).
+**Current milestone:** the vertical slice. It is one playable zone: a map assembled from
+hand-made chunks, Lichess one-move puzzles, a theory encounter for the Italian Game, a strong
+enemy with HP as advantage, run HP and a potion, and a save that resumes even in the middle of a
+battle. The plan is in
+[`docs/superpowers/plans/2026-10-27-vertical-slice.md`](docs/superpowers/plans/2026-10-27-vertical-slice.md).
+The engine spike that came before it
+([`docs/superpowers/plans/2026-10-26-engine-spike.md`](docs/superpowers/plans/2026-10-26-engine-spike.md))
+stays in the project as a developer scene, `res://spike/engine_spike.tscn`.
 
 ## Licence
 
