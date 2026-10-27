@@ -256,6 +256,33 @@ func test_a_search_without_lines_makes_the_opponent_withdraw():
 	assert_signal_emitted_with_parameters(enc, "message", ["The opponent hesitates and withdraws."])
 	assert_eq(run.hp, 100); assert_eq(run.battle.outcome, RunState.Outcome.DRAWN)
 
+## A line the engine sent without a pv.
+func _line_without_pv(value: int) -> EngineEval:
+	var e := EngineEval.new(); e.value = value; return e
+
+func test_a_search_whose_only_line_has_no_pv_makes_the_opponent_withdraw():
+	await _make(OPENING, [FakeEngine.line("g1f3", 300)])
+	fake.replies.append([_line_without_pv(300)])
+	enc.submit_move("b1c3"); await wait_for_signal(enc.finished, 2)
+	assert_signal_emitted_with_parameters(enc, "finished", [RunState.Outcome.DRAWN])
+	assert_signal_emitted_with_parameters(enc, "message", ["The opponent hesitates and withdraws."])
+	assert_eq(run.hp, 100, "no damage without a move"); assert_eq(enc.moves.size(), 2)
+	assert_eq(run.battle.outcome, RunState.Outcome.DRAWN)
+
+func test_lines_without_a_pv_are_dropped_from_the_search():
+	await _make(OPENING, [FakeEngine.line("g1f3", 300)])
+	# Kept, the line without a pv would be the enemy's best one, so the one it charges and plays.
+	fake.replies.append([_line_without_pv(900), FakeEngine.line("b8c6", 300)])
+	enc.submit_move("b1c3"); await wait_for_signal(enc.input_enabled, 2)
+	assert_eq(run.hp, 75); assert_eq(enc.moves[-1], "b8c6")
+	assert_eq(enc.outcome, -1, "the battle goes on"); assert_signal_not_emitted(enc, "finished")
+
+func test_an_opening_eval_without_a_pv_makes_the_opponent_withdraw():
+	_create(OPENING, [_line_without_pv(300)])
+	enc.begin(); await wait_for_signal(enc.finished, 2)
+	assert_signal_emitted_with_parameters(enc, "finished", [RunState.Outcome.DRAWN])
+	assert_eq(run.battle.cp_start, null, "no opening evaluation")
+
 func test_a_search_the_engine_never_answers_makes_the_opponent_withdraw():
 	await _make(OPENING, [FakeEngine.line("g1f3", 300)]); enc.engine_wait_s = 0.2
 	fake.replies.append([FakeEngine.line("b8c6", 300)])

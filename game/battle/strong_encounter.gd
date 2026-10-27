@@ -210,8 +210,9 @@ func _evaluate_opening() -> bool:
 
 
 ## Searches the position on the board at full strength, for `Tuning.STRONG_CANDIDATES` lines, and
-## returns them. Returns [] when the engine is not ready in time, refuses the configuration or the
-## position, or never answers.
+## returns the ones that have a move: every line kept may be played or read for its first move.
+## Returns [] when the engine is not ready in time, refuses the configuration or the position,
+## never answers, or answers with no line that has a move.
 func _search() -> Array:
 	if not await _wait_for_engine(engine_wait_s):
 		return []
@@ -219,7 +220,8 @@ func _search() -> Array:
 		return []
 	if not engine.set_position(_root_fen, moves):
 		return []
-	return await _run_search(Tuning.STRONG_SEARCH_MS, engine_wait_s)
+	var lines := await _run_search(Tuning.STRONG_SEARCH_MS, engine_wait_s)
+	return lines.filter(func(line: EngineEval) -> bool: return not line.pv.is_empty())
 
 
 ## The opponent leaves when the engine fails it: a draw, with no damage.
