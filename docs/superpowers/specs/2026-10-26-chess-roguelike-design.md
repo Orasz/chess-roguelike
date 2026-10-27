@@ -260,12 +260,18 @@ builder decides.
 - Licence: GPLv3 (verified in `Copying.txt`). This is why the whole game is GPLv3.
 - There is precedent for GPLv3 Android apps that bundle Stockfish: Lichess mobile and DroidFish.
 - Strength limiting uses `UCI_LimitStrength` / `UCI_Elo`.
-- ⚠ **Not verified in this brainstorm:** recent Stockfish versions set a floor on `UCI_Elo` of
-  about 1320. Beginner-level opponents will probably need extra weakening, such as choosing among
-  MultiPV candidates with noise, or a simple engine of our own for the lowest levels. The approach
-  is left to the builder.
+- **Verified in sf_19:** `UCI_Elo` accepts 1320–3190, and Stockfish silently ignores values outside
+  that range (`UciEngine` clamps them). Beginner-level opponents therefore need extra weakening,
+  such as choosing among MultiPV candidates with noise, or a simple engine of our own for the lowest
+  levels. The approach is left to the builder.
 
-**⚠ Biggest technical risk: running Stockfish inside Godot 4 on Android**
+**Biggest technical risk, now resolved: running Stockfish inside Godot 4 on Android**
+
+> **Resolved on 2026-10-27:** the custom GDExtension route works on a real phone. A Nothing
+> Phone (3) on Android 17 reached `Ready` in under 2.5 s and passed every device check. The debug
+> APK is 127.7 MB and the app uses about 451 MB of memory (PSS), mostly because of the embedded
+> 94 MiB net, so the net strategy must be settled before the open beta. See
+> [decision 0001](../../decisions/0001-engine-integration.md).
 
 - Android 10 and later block running a bundled executable from the app's data directory, so the
   usual desktop approach (launching a separate engine process) does not work.
