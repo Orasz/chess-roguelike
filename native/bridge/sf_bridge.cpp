@@ -19,6 +19,7 @@
 // Same includes and init sequence as Stockfish's src/main.cpp.
 #include "../thirdparty/Stockfish/src/attacks.h"
 #include "../thirdparty/Stockfish/src/misc.h"
+#include "../thirdparty/Stockfish/src/movegen.h"
 #include "../thirdparty/Stockfish/src/position.h"
 #include "../thirdparty/Stockfish/src/tune.h"
 #include "../thirdparty/Stockfish/src/uci.h"
@@ -227,6 +228,37 @@ void init_tables() {
 
 bool has_line_break(const std::string& s) { return s.find_first_of("\r\n") != std::string::npos; }
 
+// Sets `pos` up from `fen` and plays `moves` on it, with the checks
+// Engine::set_position runs (Position::set, then a legal-move lookup per move),
+// which on failure make the UCI loop call std::exit. `states` owns the
+// StateInfo chain that `pos` points into, so it must outlive `pos`.
+// Shared by validate_position() and inspect(), so both accept the same input.
+bool replay(const std::string&                fen,
+            const std::vector<std::string>&   moves,
+            std::deque<Stockfish::StateInfo>& states,
+            Stockfish::Position&              pos) {
+    // A line break would split the command, so what Stockfish parses would differ.
+    if (has_line_break(fen))
+        return false;
+    for (const std::string& move : moves)
+        if (has_line_break(move))
+            return false;
+
+    init_tables();
+    states.emplace_back();
+    if (pos.set(fen, false, &states.back()).has_value())
+        return false;
+    for (const std::string& move : moves)
+    {
+        const Stockfish::Move m = Stockfish::UCIEngine::to_move(pos, move);
+        if (m == Stockfish::Move::none())
+            return false;
+        states.emplace_back();
+        pos.do_move(m, states.back());
+    }
+    return true;
+}
+
 // Search threads get 8 MB stacks in thread_native.h; the UCI loop gets the same.
 constexpr size_t kLoopStackSize = 8 * 1024 * 1024;
 
@@ -297,27 +329,28 @@ void stop() {
 bool running() { return state().running; }
 
 bool validate_position(const std::string& fen, const std::vector<std::string>& moves) {
-    // A line break would split the command, so what Stockfish parses would differ.
-    if (has_line_break(fen))
-        return false;
-    for (const std::string& move : moves)
-        if (has_line_break(move))
-            return false;
-
-    init_tables();
-    std::deque<Stockfish::StateInfo> states(1);
+    std::deque<Stockfish::StateInfo> states;
     Stockfish::Position              pos;
-    if (pos.set(fen, false, &states.back()).has_value())
-        return false;
-    for (const std::string& move : moves)
-    {
-        const Stockfish::Move m = Stockfish::UCIEngine::to_move(pos, move);
-        if (m == Stockfish::Move::none())
-            return false;
-        states.emplace_back();
-        pos.do_move(m, states.back());
-    }
-    return true;
+    return replay(fen, moves, states, pos);
+}
+
+PositionInfo inspect(const std::string& fen, const std::vector<std::string>& moves) {
+    PositionInfo                     info;
+    std::deque<Stockfish::StateInfo> states;
+    Stockfish::Position              pos;
+    if (!replay(fen, moves, states, pos))
+        return info;
+
+    info.valid = true;
+    info.fen   = pos.fen();
+    for (const Stockfish::Move m : Stockfish::MoveList<Stockfish::LEGAL>(pos))
+        info.legal.push_back(Stockfish::UCIEngine::move(m, false));
+    info.in_check = pos.checkers() != 0;
+    info.rule50   = pos.rule50_count();
+    // do_move stores a negative distance to the earlier occurrence when the
+    // position has already occurred twice before.
+    info.threefold = pos.state()->repetition < 0;
+    return info;
 }
 
 }  // namespace sfbridge

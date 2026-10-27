@@ -3,6 +3,7 @@
 #include <atomic>
 
 #include <godot_cpp/classes/ref_counted.hpp>
+#include <godot_cpp/variant/dictionary.hpp>
 #include <godot_cpp/variant/packed_string_array.hpp>
 #include <godot_cpp/variant/string.hpp>
 
@@ -26,6 +27,9 @@ class StockfishEngine : public RefCounted {
     bool is_running() const;
     // True if Stockfish would accept this position; false where it would exit the process.
     static bool validate_position(const String& fen, const PackedStringArray& moves);
+    // Stockfish's own view of the position after `moves`: {fen, legal, in_check, rule50,
+    // threefold}. Empty where validate_position() is false.
+    static Dictionary inspect_position(const String& fen, const PackedStringArray& moves);
 
    protected:
     static void _bind_methods();

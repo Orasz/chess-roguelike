@@ -45,12 +45,32 @@ void StockfishEngine::stop() {
 
 bool StockfishEngine::is_running() const { return owns_engine() && sfbridge::running(); }
 
-bool StockfishEngine::validate_position(const String& fen, const PackedStringArray& moves) {
+static std::vector<std::string> to_std_moves(const PackedStringArray& moves) {
     std::vector<std::string> std_moves;
     std_moves.reserve(moves.size());
     for (int64_t i = 0; i < moves.size(); ++i)
         std_moves.emplace_back(moves[i].utf8().get_data());
-    return sfbridge::validate_position(fen.utf8().get_data(), std_moves);
+    return std_moves;
+}
+
+bool StockfishEngine::validate_position(const String& fen, const PackedStringArray& moves) {
+    return sfbridge::validate_position(fen.utf8().get_data(), to_std_moves(moves));
+}
+
+Dictionary StockfishEngine::inspect_position(const String& fen, const PackedStringArray& moves) {
+    Dictionary result;
+    const sfbridge::PositionInfo info = sfbridge::inspect(fen.utf8().get_data(), to_std_moves(moves));
+    if (!info.valid)
+        return result;
+    PackedStringArray legal;
+    for (const std::string& move : info.legal)
+        legal.push_back(String::utf8(move.c_str()));
+    result["fen"]       = String::utf8(info.fen.c_str());
+    result["legal"]     = legal;
+    result["in_check"]  = info.in_check;
+    result["rule50"]    = info.rule50;
+    result["threefold"] = info.threefold;
+    return result;
 }
 
 bool StockfishEngine::owns_engine() const { return owner.load() == this; }
@@ -63,6 +83,8 @@ void StockfishEngine::_bind_methods() {
     ClassDB::bind_method(D_METHOD("is_running"), &StockfishEngine::is_running);
     ClassDB::bind_static_method("StockfishEngine", D_METHOD("validate_position", "fen", "moves"),
                                 &StockfishEngine::validate_position);
+    ClassDB::bind_static_method("StockfishEngine", D_METHOD("inspect_position", "fen", "moves"),
+                                &StockfishEngine::inspect_position);
 }
 
 }  // namespace godot

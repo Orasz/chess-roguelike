@@ -30,4 +30,18 @@ bool running();
 // Safe to call whether or not the engine is running.
 bool validate_position(const std::string& fen, const std::vector<std::string>& moves);
 
+// What Stockfish's own move generator says about a position.
+struct PositionInfo {
+    bool                     valid = false;  // false: the input was rejected, and nothing else is set
+    std::string              fen;            // the position after the moves
+    std::vector<std::string> legal;          // legal moves in UCI notation, castling as e1g1
+    bool                     in_check  = false;
+    int                      rule50    = 0;      // half-moves since the last capture or pawn move
+    bool                     threefold = false;  // the position has now occurred three times
+};
+
+// Replays `moves` from `fen` with the same checks as validate_position() and
+// reports on the resulting position. Safe to call whether or not the engine runs.
+PositionInfo inspect(const std::string& fen, const std::vector<std::string>& moves);
+
 }  // namespace sfbridge
