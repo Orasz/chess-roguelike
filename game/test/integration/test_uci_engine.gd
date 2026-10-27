@@ -74,6 +74,18 @@ func test_positions_stockfish_would_reject_never_reach_it():
 	assert_true(await wait_for_signal(engine.best_move, 10), "engine still alive")
 
 
+func test_shutdown_from_a_signal_handler_stops_dispatch():
+	watch_signals(engine)
+	engine.set_process(false)  # let the whole search pile up, then dispatch it in one batch
+	engine.set_position(UciEngine.START_FEN)
+	engine.go_movetime(200)
+	await wait_seconds(1.0)
+	engine.evaluation.connect(func(_eval): engine.shutdown(), CONNECT_ONE_SHOT)
+	engine._process(0.0)
+	assert_signal_not_emitted(engine, "best_move")
+	assert_false(engine.is_ready(), "no engine behind it")
+
+
 func test_free_during_search_then_restart():
 	engine.set_position(UciEngine.START_FEN)
 	engine.go_movetime(5000)

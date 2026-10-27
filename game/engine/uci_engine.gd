@@ -107,10 +107,13 @@ func _notification(what: int) -> void:
 
 
 func _process(_delta: float) -> void:
-	if _engine == null:
+	var engine := _engine
+	if engine == null:
 		return
-	for line in _engine.poll_lines():
+	for line in engine.poll_lines():
 		_handle_line(line)
+		if _engine != engine:
+			break  # a signal handler shut the engine down or restarted it
 
 
 func _handle_line(line: String) -> void:
@@ -133,6 +136,6 @@ func _handle_line(line: String) -> void:
 			evaluation.emit(eval)
 	else:
 		var move := UciParser.parse_bestmove(line)
-		if move != "":
+		if move != "" and _state == State.SEARCHING:
 			_state = State.READY
 			best_move.emit(move)
