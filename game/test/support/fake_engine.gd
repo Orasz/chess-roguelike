@@ -73,7 +73,8 @@ func set_position(fen: String, moves := PackedStringArray()) -> bool:
 	if not is_ready() or ChessRules.inspect(fen, moves).is_empty():
 		return false
 	_fen = fen
-	_moves = moves
+	# A copy: the caller's array is shared, not copied, and it may grow before the search is read.
+	_moves = moves.duplicate()
 	return true
 
 
