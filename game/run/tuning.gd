@@ -43,3 +43,8 @@ const POTION_HEAL := 30
 const POTION_MAX := 3
 const START_POTIONS := 1
 const DROP_CHANCE := {"puzzle": 0.25, "theory": 1.0, "strong": 1.0}
+
+## Battle timing: the pause before an opponent's move, and how long an encounter waits for the
+## engine to explain a mistake.
+const OPPONENT_DELAY_S := 0.6
+const EXPLAIN_TIMEOUT_S := 5.0
