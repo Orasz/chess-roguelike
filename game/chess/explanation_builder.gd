@@ -1,8 +1,7 @@
 class_name ExplanationBuilder
 extends RefCounted
 ## Turns puzzle themes and the engine's best reply into the short texts the game
-## shows after a mistake. Texts are translated with `TranslationServer.translate()`, the
-## static twin of `tr()`, from English sources.
+## shows after a mistake. Every text goes through `tr()` with an English source.
 
 ## Lichess theme tags in the order that decides which one names a puzzle: the
 ## first tag in this list that a puzzle carries wins. Tags that are not listed
@@ -21,6 +20,9 @@ const _REPLAYED_PLIES := 3
 const _MATERIAL_DROP := 100
 ## FEN letters of the piece types the mover can lose, most valuable first.
 const _LOSABLE_PIECES := "qrbnp"
+
+## `tr()` is an instance method, so the static functions below call it on this object.
+static var _translator := RefCounted.new()
 
 
 ## The name of the first of `themes` that is worth showing, in the priority order of
@@ -45,18 +47,18 @@ static func after_mistake(fen: String, wrong_uci: String, reply: EngineEval) -> 
 	if wrong.is_empty():
 		return ""
 	if reply.is_mate and reply.value > 1:
-		return TranslationServer.translate("After %s, the opponent has mate in %d.") % [wrong, reply.value]
+		return _translator.tr("After %s, the opponent has mate in %d.") % [wrong, reply.value]
 	var best := ""
 	if not reply.pv.is_empty():
 		best = ChessRules.san(ChessRules.fen_after(fen, PackedStringArray([wrong_uci])), reply.pv[0], false)
 	if best.is_empty():
 		return ""
 	if reply.is_mate and reply.value == 1:
-		return TranslationServer.translate("After %s, %s is checkmate.") % [wrong, best]
+		return _translator.tr("After %s, %s is checkmate.") % [wrong, best]
 	var lost := _lost_piece(fen, wrong_uci, reply.pv)
 	if not lost.is_empty():
-		return TranslationServer.translate("After %s, %s wins your %s.") % [wrong, best, lost]
-	return TranslationServer.translate("After %s, the best reply is %s.") % [wrong, best]
+		return _translator.tr("After %s, %s wins your %s.") % [wrong, best, lost]
+	return _translator.tr("After %s, the best reply is %s.") % [wrong, best]
 
 
 ## The translated name of the most valuable piece type the mover loses when `wrong_uci`
@@ -92,31 +94,31 @@ static func _count(fen: String, piece: String) -> int:
 
 static func _translated_theme(tag: String) -> String:
 	match tag:
-		"backRankMate": return TranslationServer.translate("Back-rank mate")
-		"smotheredMate": return TranslationServer.translate("Smothered mate")
-		"mateIn1": return TranslationServer.translate("Mate in one")
-		"fork": return TranslationServer.translate("Fork")
-		"pin": return TranslationServer.translate("Pin")
-		"skewer": return TranslationServer.translate("Skewer")
-		"discoveredAttack": return TranslationServer.translate("Discovered attack")
-		"doubleCheck": return TranslationServer.translate("Double check")
-		"hangingPiece": return TranslationServer.translate("Hanging piece")
-		"trappedPiece": return TranslationServer.translate("Trapped piece")
-		"attraction": return TranslationServer.translate("Attraction")
-		"deflection": return TranslationServer.translate("Deflection")
-		"capturingDefender": return TranslationServer.translate("Capturing the defender")
-		"interference": return TranslationServer.translate("Interference")
-		"clearance": return TranslationServer.translate("Clearance")
-		"exposedKing": return TranslationServer.translate("Exposed king")
-		"promotion": return TranslationServer.translate("Promotion")
+		"backRankMate": return _translator.tr("Back-rank mate")
+		"smotheredMate": return _translator.tr("Smothered mate")
+		"mateIn1": return _translator.tr("Mate in one")
+		"fork": return _translator.tr("Fork")
+		"pin": return _translator.tr("Pin")
+		"skewer": return _translator.tr("Skewer")
+		"discoveredAttack": return _translator.tr("Discovered attack")
+		"doubleCheck": return _translator.tr("Double check")
+		"hangingPiece": return _translator.tr("Hanging piece")
+		"trappedPiece": return _translator.tr("Trapped piece")
+		"attraction": return _translator.tr("Attraction")
+		"deflection": return _translator.tr("Deflection")
+		"capturingDefender": return _translator.tr("Capturing the defender")
+		"interference": return _translator.tr("Interference")
+		"clearance": return _translator.tr("Clearance")
+		"exposedKing": return _translator.tr("Exposed king")
+		"promotion": return _translator.tr("Promotion")
 	return ""
 
 
 static func _translated_piece(letter: String) -> String:
 	match letter:
-		"q": return TranslationServer.translate("queen")
-		"r": return TranslationServer.translate("rook")
-		"b": return TranslationServer.translate("bishop")
-		"n": return TranslationServer.translate("knight")
-		"p": return TranslationServer.translate("pawn")
+		"q": return _translator.tr("queen")
+		"r": return _translator.tr("rook")
+		"b": return _translator.tr("bishop")
+		"n": return _translator.tr("knight")
+		"p": return _translator.tr("pawn")
 	return ""
