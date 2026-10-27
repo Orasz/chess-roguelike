@@ -57,13 +57,13 @@ static func is_valid_fen(fen: String) -> bool:
 	return (_is_valid_board(fields[0])
 			and fields[1] in ["w", "b"]
 			and _is_valid_castling(fields[2])
-			and _matches(fields[3], "^(-|[a-h][36])$")
-			and _matches(fields[4], "^\\d+$")
-			and _matches(fields[5], "^[1-9]\\d*$"))
+			and _matches(fields[3], "-|[a-h][36]")
+			and _matches(fields[4], "\\d+")
+			and _matches(fields[5], "[1-9]\\d*"))
 
 
 static func is_valid_uci_move(move: String) -> bool:
-	return _matches(move, "^[a-h][1-8][a-h][1-8][qrbn]?$")
+	return _matches(move, "[a-h][1-8][a-h][1-8][qrbn]?")
 
 
 static func _is_valid_board(board: String) -> bool:
@@ -85,11 +85,13 @@ static func _is_valid_board(board: String) -> bool:
 
 
 static func _is_valid_castling(castling: String) -> bool:
-	return castling == "-" or (castling != "" and _matches(castling, "^K?Q?k?q?$"))
+	return castling == "-" or (castling != "" and _matches(castling, "K?Q?k?q?"))
 
 
+## True when `pattern` matches the whole of `text`. \A and \z are used
+## instead of ^ and $, because $ also matches before a trailing newline.
 static func _matches(text: String, pattern: String) -> bool:
-	var re := RegEx.create_from_string(pattern)
+	var re := RegEx.create_from_string("\\A(?:" + pattern + ")\\z")
 	return re.search(text) != null
 
 

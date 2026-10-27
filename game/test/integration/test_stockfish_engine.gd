@@ -72,6 +72,16 @@ func test_validate_position_matches_stockfish():
 	assert_false(StockfishEngine.validate_position(start + "\n", PackedStringArray()), "line break in FEN")
 
 
+func test_send_refuses_line_breaks():
+	var e := _new_engine()
+	e.start()
+	e.send("uci\nisready")  # would smuggle two commands in one call
+	e.send("isready")
+	var lines := await _collect_until(e, "readyok")
+	assert_eq(lines[-1], "readyok")
+	assert_false(lines.has("uciok"), "the line with a line break must not reach the engine")
+
+
 func test_second_instance_cannot_start():
 	var a := _new_engine()
 	var b := _new_engine()

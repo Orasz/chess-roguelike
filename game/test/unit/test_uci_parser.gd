@@ -65,3 +65,9 @@ func test_uci_move_syntax():
 		assert_true(UciParser.is_valid_uci_move(m), m)
 	for m in ["", "e7e8k", "e9e4", "e2-e4", "e2e4 ", "E2E4"]:
 		assert_false(UciParser.is_valid_uci_move(m), m)
+
+
+func test_trailing_line_break_is_rejected():
+	assert_false(UciParser.is_valid_uci_move("e2e4\n"))
+	assert_false(UciParser.is_valid_fen(START_FEN + "\n"))
+	assert_false(UciParser.is_valid_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w \n - 0 1"))

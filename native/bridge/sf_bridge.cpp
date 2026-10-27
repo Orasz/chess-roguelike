@@ -194,7 +194,8 @@ bool start() {
 }
 
 void send_line(const std::string& line) {
-    if (state().running)
+    // A line break would let one call smuggle in several commands.
+    if (state().running && !has_line_break(line))
         state().in.push(line);
 }
 

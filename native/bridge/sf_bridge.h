@@ -12,7 +12,8 @@ namespace sfbridge {
 // std::cout redirected to in-memory buffers. Returns false if it already runs.
 bool start();
 
-// Queues one UCI command for the engine. Ignored when the engine is not running.
+// Queues one UCI command for the engine. Ignored when the engine is not running
+// or when the line contains a line break.
 void send_line(const std::string& line);
 
 // Returns the complete output lines produced since the last call.
