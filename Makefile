@@ -17,9 +17,6 @@ native/$(NET):
 native-macos: net
 	scons -C native platform=macos arch=arm64 target=template_debug
 
-# Godot 4.7.2's headless editor crashes when it discovers a GDExtension that is
-# not yet listed in .godot/extension_list.cfg in a project it has imported before.
-# Listing ours up front makes Godot load it at startup instead.
 native-android: net
 	scons -C native platform=android arch=arm64 target=template_debug
 
@@ -33,6 +30,9 @@ install: apk
 logcat:
 	$(ADB) logcat -s godot
 
+# Godot 4.7.2's headless editor crashes when it discovers a GDExtension that is
+# not yet listed in .godot/extension_list.cfg in a project it has imported before.
+# Listing ours up front makes Godot load it at startup instead.
 import:
 	@mkdir -p game/.godot
 	@grep -qx 'res://bin/stockfish_gd.gdextension' game/.godot/extension_list.cfg 2>/dev/null \

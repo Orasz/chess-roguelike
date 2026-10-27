@@ -16,8 +16,18 @@ GPLv3. The game ships Stockfish, which is GPLv3.
 
 ## Development
 
-You need Godot 4.7.2. Install it with `brew install --cask --appdir="$HOME/Applications" godot`,
-or set `GODOT` to point at your Godot binary.
+You need Godot 4.7.2 and SCons. Install them with
+`brew install --cask --appdir="$HOME/Applications" godot` and `brew install scons`, or set
+`GODOT` to point at your Godot binary.
+
+After cloning, fetch the submodules (godot-cpp and Stockfish):
+
+```bash
+git submodule update --init
+```
+
+The first `make test` downloads Stockfish's NNUE net (about 94 MiB) and builds the native
+extension, which takes a few minutes.
 
 To run the test suite headless, use:
 
