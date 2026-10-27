@@ -8,6 +8,19 @@ Everything the repository ships that someone else made, with its licence.
   Stockfish developers. It is used unmodified, with its embedded NNUE net. The game as a whole is
   GPLv3 for that reason: see [`LICENSE`](LICENSE). Source: <https://github.com/official-stockfish/Stockfish>.
 
+- **Godot Engine** (the engine the game runs on, exported into the APK): MIT, by Juan Linietsky,
+  Ariel Manzur and the Godot Engine contributors. Licence: <https://godotengine.org/license>.
+  The engine bundles third-party components under their own licences. `Engine.get_copyright_info()`
+  lists them, `Engine.get_license_info()` holds their licence texts, and the engine's
+  `COPYRIGHT.txt` lists them too; `Engine.get_license_text()` returns Godot's own licence.
+
+- **godot-cpp** (the C++ bindings of the GDExtension, compiled into it): MIT, by the Godot Engine
+  contributors. Source: <https://github.com/godotengine/godot-cpp>.
+
+- Development only: **GUT** (the unit test framework, vendored in `game/addons/gut/`): MIT, by
+  Tom "Butch" Wesley. Its licence is in [`game/addons/gut/LICENSE.md`](game/addons/gut/LICENSE.md).
+  The export excludes it, so the APK does not ship it.
+
 ## Data
 
 - **Lichess puzzle database** (CC0, public domain), from <https://database.lichess.org/>.
