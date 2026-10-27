@@ -22,10 +22,10 @@ native-android: net
 
 apk: native-android import
 	mkdir -p build
-	$(GODOT) --headless --path game --export-debug "Android" ../build/spike.apk
+	$(GODOT) --headless --path game --export-debug "Android" ../build/slice.apk
 
 install: apk
-	$(ADB) install -r build/spike.apk
+	$(ADB) install -r build/slice.apk
 
 logcat:
 	$(ADB) logcat -s godot

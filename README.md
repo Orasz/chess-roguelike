@@ -76,6 +76,6 @@ Then use these `make` targets:
 | Target | What it does |
 |---|---|
 | `make native-android` | Builds the arm64 GDExtension |
-| `make apk` | Exports `build/spike.apk` (debug) |
+| `make apk` | Exports `build/slice.apk` (debug) |
 | `make install` | Installs it on the USB-connected phone |
 | `make logcat` | Follows Godot's log on the phone |
