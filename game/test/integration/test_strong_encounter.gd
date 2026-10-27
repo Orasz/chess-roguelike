@@ -256,6 +256,18 @@ func test_a_search_without_lines_makes_the_opponent_withdraw():
 	assert_signal_emitted_with_parameters(enc, "message", ["The opponent hesitates and withdraws."])
 	assert_eq(run.hp, 100); assert_eq(run.battle.outcome, RunState.Outcome.DRAWN)
 
+func test_a_search_the_engine_never_answers_makes_the_opponent_withdraw():
+	await _make(OPENING, [FakeEngine.line("g1f3", 300)]); enc.engine_wait_s = 0.2
+	fake.replies.append([FakeEngine.line("b8c6", 300)])
+	enc.submit_move("b1c3"); fake.shutdown()
+	assert_eq(fake.searches.size(), 2, "the engine accepted the search")
+	await wait_process_frames(3)
+	assert_signal_not_emitted(enc, "finished")
+	await wait_for_signal(enc.finished, 2)
+	assert_signal_emitted_with_parameters(enc, "finished", [RunState.Outcome.DRAWN])
+	assert_signal_emitted_with_parameters(enc, "message", ["The opponent hesitates and withdraws."])
+	assert_eq(run.hp, 100); assert_eq(run.battle.outcome, RunState.Outcome.DRAWN)
+
 func test_a_move_while_the_enemy_thinks_is_ignored():
 	await _make(OPENING, [FakeEngine.line("g1f3", 300)])
 	fake.replies.append([FakeEngine.line("b8c6", -300)])

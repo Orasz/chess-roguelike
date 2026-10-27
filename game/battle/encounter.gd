@@ -31,7 +31,8 @@ var run: RunState
 var engine: UciEngine
 ## A `RunState.Outcome`, or -1 while the encounter is not over.
 var outcome := -1
-## How long a search waits for the engine to be ready, in seconds. Tests shorten it.
+## How long a search waits for the engine to be ready, in seconds of foreground time (see
+## `advance_wait()`). Tests shorten it.
 var engine_wait_s := Tuning.ENGINE_WAIT_S
 
 ## Which side the player has, for a subclass to set once it knows.
@@ -120,21 +121,32 @@ func _is_legal(uci: String) -> bool:
 	return ChessRules.inspect(_fen).get("legal", PackedStringArray()).has(uci)
 
 
-## Polls `engine.is_ready()` once per frame, for at most `timeout_s` seconds. Returns whether the
-## engine is ready, and false when the encounter left the tree meanwhile.
+## The foreground time a wait has counted after one more frame: `waited` plus the frame's process
+## time `delta`, of which at most `Tuning.MAX_WAIT_STEP_S` counts. The main loop stops while the
+## app is in the background, and the first frame back has a `delta` that covers the whole time
+## away; counted as one short step, it cannot time out a wait whose result is about to be polled.
+static func advance_wait(waited: float, delta: float) -> float:
+	return waited + minf(delta, Tuning.MAX_WAIT_STEP_S)
+
+
+## Polls `engine.is_ready()` once per frame, for at most `timeout_s` seconds of foreground time
+## (see `advance_wait()`). Returns whether the engine is ready, and false when the encounter left
+## the tree meanwhile.
 func _wait_for_engine(timeout_s: float) -> bool:
-	var deadline := Time.get_ticks_msec() + int(timeout_s * 1000.0)
+	var waited := 0.0
 	while not engine.is_ready():
-		if not is_inside_tree() or Time.get_ticks_msec() >= deadline:
+		if not is_inside_tree() or waited >= timeout_s:
 			return false
 		await get_tree().process_frame
+		waited = advance_wait(waited, get_process_delta_time())
 	return true
 
 
 ## Runs the search on the position the caller has just set, for `ms` milliseconds, and returns its
 ## lines (`EngineEval`s, best first). Only a result that arrives while this search is awaited
 ## counts. Returns [] when the engine refuses the search, when the result is still missing
-## `timeout_s` seconds after the search time, and when the encounter left the tree meanwhile.
+## `timeout_s` seconds after the search time (both in foreground time, see `advance_wait()`), and
+## when the encounter left the tree meanwhile.
 func _run_search(ms: int, timeout_s: float) -> Array:
 	if not engine.search_finished.is_connected(_on_search_finished):
 		engine.search_finished.connect(_on_search_finished)
@@ -143,12 +155,14 @@ func _run_search(ms: int, timeout_s: float) -> Array:
 	if not engine.go_movetime(ms):
 		_awaiting_search = false
 		return []
-	var deadline := Time.get_ticks_msec() + ms + int(timeout_s * 1000.0)
+	var limit := ms / 1000.0 + timeout_s
+	var waited := 0.0
 	while _awaiting_search:
-		if not is_inside_tree() or Time.get_ticks_msec() >= deadline:
+		if not is_inside_tree() or waited >= limit:
 			_awaiting_search = false
 			return []
 		await get_tree().process_frame
+		waited = advance_wait(waited, get_process_delta_time())
 	return _search_lines
 
 

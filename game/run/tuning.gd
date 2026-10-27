@@ -49,3 +49,5 @@ const DROP_CHANCE := {"puzzle": 0.25, "theory": 1.0, "strong": 1.0}
 const OPPONENT_DELAY_S := 0.6
 const EXPLAIN_TIMEOUT_S := 5.0
 const EXPLAIN_MIN_DAMAGE := 5
+## The most one frame adds to an engine wait, in seconds, so time in the background is one step.
+const MAX_WAIT_STEP_S := 0.25
