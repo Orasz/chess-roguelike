@@ -195,6 +195,56 @@ func test_continue_restores_a_battle_in_progress():
 	assert_eq(fake.searches, [], "no damage is recomputed while the player is to move")
 
 
+## Focus 1 of the review: the app is killed while the enemy searches. The save of the player's move
+## is on disk, the damage of that move is not; on resume, the search reruns and charges it once.
+func test_a_kill_during_the_enemy_search_charges_the_move_once_on_resume():
+	var main := _main()
+	main.start_run(1200, 42)
+	var id := _first_of_kind(main.run, "strong")
+	var record := _record_of(main.run, id)
+	var start := ChessRules.fen_after(record["fen"], PackedStringArray(record["moves"]).slice(0, 1))
+	# The opening evaluation gives the player +300 cp.
+	fake.replies = [[FakeEngine.line(ChessRules.inspect(start)["legal"][0], 300)]]
+	main.open_encounter(id)
+	var enc: StrongEncounter = main.current_screen().encounter
+	assert_true(await wait_for_signal(enc.input_enabled, 5), "the opening evaluation")
+	enc.submit_move(ChessRules.inspect(enc.current_fen())["legal"][0])
+	var played := enc.moves.duplicate()
+	var reply: String = ChessRules.inspect(enc.current_fen())["legal"][0]
+	await wait_process_frames(1)
+	var copy := FileAccess.get_file_as_bytes(PATH)
+	var on_disk := SaveStore.new(PATH).load_run()
+	assert_eq(PackedStringArray(on_disk.battle["moves"]), played, "the save holds the player's move")
+	assert_eq(on_disk.hp, Tuning.MAX_HP, "but not its damage: the search was still pending")
+	# The kill. Out of the tree, the pending search ends without effect before Main is freed; what
+	# Main writes on its way out is replaced by the copy, as if the process had died at the copy.
+	remove_child(main)
+	await wait_process_frames(2)
+	main.free()
+	var file := FileAccess.open(PATH, FileAccess.WRITE)
+	file.store_buffer(copy)
+	file.close()
+	var resumed := _main()
+	# The rerun search scores the enemy's reply +300 cp for the enemy: the move drops the player
+	# from +300 to -300 cp.
+	fake.replies = [[FakeEngine.line(reply, 300)]]
+	var cost := HpModel.player_damage(300, -300)
+	assert_gt(cost, 0)
+	assert_true(resumed.continue_run())
+	var resumed_enc: StrongEncounter = resumed.current_screen().encounter
+	assert_true(await wait_for_signal(resumed_enc.input_enabled, 5), "the enemy answered")
+	assert_eq(fake.searches.size(), 1, "exactly one search on resume")
+	if fake.searches.size() == 1:
+		assert_eq(fake.searches[0]["moves"], played, "the search of the player's move")
+	assert_eq(resumed.run.hp, Tuning.MAX_HP - cost, "the move is charged once")
+	var expected := played.duplicate()
+	expected.append(reply)
+	assert_eq(resumed_enc.moves, expected, "the enemy's reply is appended")
+	await wait_process_frames(2)
+	assert_eq(resumed.run.hp, Tuning.MAX_HP - cost, "and nothing charges it again")
+	assert_eq(SaveStore.new(PATH).load_run().hp, Tuning.MAX_HP - cost, "the damage is saved with the reply")
+
+
 func test_finishing_a_battle_returns_to_the_overworld_with_the_enemy_gone():
 	var main := _main()
 	main.start_run(1200, 42)
