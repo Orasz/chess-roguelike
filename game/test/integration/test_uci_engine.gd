@@ -102,9 +102,11 @@ func test_shutdown_from_a_signal_handler_stops_dispatch():
 func test_free_during_search_then_restart():
 	engine.set_position(UciEngine.START_FEN)
 	engine.go_movetime(5000)
+	var started := Time.get_ticks_msec()
 	engine.queue_free()
 	await get_tree().process_frame
 	await get_tree().process_frame
+	assert_lt(Time.get_ticks_msec() - started, 1000, "freeing must not wait out the 5 s search")
 	engine = UciEngine.new()
 	add_child_autofree(engine)
 	assert_true(engine.start())

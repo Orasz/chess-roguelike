@@ -87,6 +87,8 @@ func test_second_instance_cannot_start():
 	var b := _new_engine()
 	assert_true(a.start())
 	assert_false(b.start())
+	b.stop()
+	assert_true(a.is_running(), "a non-owner's stop() must not stop the engine")
 	a.send("isready")
 	assert_eq((await _collect_until(a, "readyok"))[-1], "readyok")
 
