@@ -257,6 +257,41 @@ func test_from_dict_rejects_values_that_are_not_what_they_look_like():
 	assert_null(RunState.from_dict(bad_chunks), "a chunk id that is not a string")
 
 
+## The save data of a run with `_two_encounters`, after a trip through JSON.
+func _saved_with_two_encounters() -> Dictionary:
+	var r := _run()
+	_two_encounters(r)
+	return _through_json(r)
+
+
+func test_from_dict_accepts_well_formed_encounters():
+	assert_not_null(RunState.from_dict(_saved_with_two_encounters()))
+
+
+func test_from_dict_rejects_an_encounter_with_a_missing_field():
+	for field in ["kind", "content", "mandatory", "resolved"]:
+		var d := _saved_with_two_encounters()
+		d.encounters.b.erase(field)
+		assert_null(RunState.from_dict(d), "without %s" % field)
+
+
+func test_from_dict_rejects_an_encounter_with_a_wrong_type():
+	var wrong := {"kind": 3, "content": null, "mandatory": "yes", "resolved": 0}
+	for field in wrong:
+		var d := _saved_with_two_encounters()
+		d.encounters.b[field] = wrong[field]
+		assert_null(RunState.from_dict(d), "bad %s" % field)
+	var not_an_object := _saved_with_two_encounters()
+	not_an_object.encounters.b = "puzzle"
+	assert_null(RunState.from_dict(not_an_object), "an encounter that is not an object")
+
+
+func test_from_dict_rejects_an_encounter_of_an_unknown_kind():
+	var d := _saved_with_two_encounters()
+	d.encounters.b.kind = "dragon"
+	assert_null(RunState.from_dict(d))
+
+
 func test_from_dict_does_not_fire_died_for_a_dead_run():
 	var r := _run()
 	r.take_damage(Tuning.MAX_HP)

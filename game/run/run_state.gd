@@ -7,6 +7,8 @@ extends RefCounted
 enum Outcome { WON, LOST, DRAWN }
 
 const VERSION := 1
+## The kinds of encounter the game builds.
+const _ENCOUNTER_KINDS: Array[String] = ["puzzle", "theory", "strong"]
 
 ## Emitted after every mutation of the run.
 signal changed()
@@ -123,8 +125,9 @@ func to_dict() -> Dictionary:
 
 
 ## Rebuilds a run from `to_dict()` output, or from the same after a trip through JSON. Returns
-## null when the version differs, or when a field is missing or of the wrong type. `encounters`
-## and `battle` are kept as given: the encounters restore their own numbers.
+## null when the version differs, when a field is missing or of the wrong type, or when an
+## encounter is not `{kind, content, mandatory, resolved}` with a kind of `_ENCOUNTER_KINDS`.
+## `encounters` and `battle` are kept as given: the encounters restore their own numbers.
 static func from_dict(d: Dictionary) -> RunState:
 	if not _is_valid(d):
 		return null
@@ -171,9 +174,28 @@ static func _is_valid(d: Dictionary) -> bool:
 		typeof(d.get("opening_id")) == TYPE_STRING
 		and _is_string_array(d.get("chunk_order"))
 		and _is_tile(d.get("player_tile"))
-		and typeof(d.get("encounters")) == TYPE_DICTIONARY
+		and _are_encounters(d.get("encounters"))
 		and typeof(d.get("battle")) == TYPE_DICTIONARY
 	)
+
+
+## A Dictionary whose every value is an encounter: `{kind, content, mandatory, resolved}`, a
+## String of `_ENCOUNTER_KINDS`, a String and two booleans.
+static func _are_encounters(v: Variant) -> bool:
+	if typeof(v) != TYPE_DICTIONARY:
+		return false
+	for entry: Variant in (v as Dictionary).values():
+		if typeof(entry) != TYPE_DICTIONARY:
+			return false
+		var e: Dictionary = entry
+		if not (
+			typeof(e.get("kind")) == TYPE_STRING and _ENCOUNTER_KINDS.has(e["kind"])
+			and typeof(e.get("content")) == TYPE_STRING
+			and typeof(e.get("mandatory")) == TYPE_BOOL
+			and typeof(e.get("resolved")) == TYPE_BOOL
+		):
+			return false
+	return true
 
 
 ## JSON parses every number as a float, and `to_dict()` itself holds ints.
