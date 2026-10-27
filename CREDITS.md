@@ -30,7 +30,9 @@ Everything the repository ships that someone else made, with its licence.
 
 - **Ninja Adventure Asset Pack** by pixel-boy (CC0 1.0), from <https://pixel-boy.itch.io/ninja-adventure-asset-pack>.
   Used for the portraits on the battle screen: six of the pack's `Faceset.png` images (38x38 px),
-  renamed, in `game/assets/ninja_adventure/`. The pack's licence text is next to them, in
+  renamed, in `game/assets/ninja_adventure/`. The overworld map shows the enemies' portraits at half
+  size, and adds four tilesets and one walking sheet, copied unchanged and renamed. The pack's
+  licence text is next to them, in
   [`game/assets/ninja_adventure/LICENSE.txt`](game/assets/ninja_adventure/LICENSE.txt).
   - `monsters/gold_racoon.png`, from `Actor/Monster/GoldRacoon/Faceset.png`: Greedy Pawn.
   - `monsters/kappa_green.png`, from `Actor/Monster/KappaGreen/Faceset.png`: Sneaky Bishop.
@@ -38,3 +40,9 @@ Everything the repository ships that someone else made, with its licence.
   - `characters/old_man_3.png`, from `Actor/Character/OldMan3/Faceset.png`: Opening Scholar.
   - `bosses/demon_cyclop.png`, from `Actor/Boss/DemonCyclop/Faceset.png`: Gatekeeper Rook.
   - `characters/boy.png`, from `Actor/Character/Boy/Faceset.png`: the player.
+  - `characters/boy_walk.png`, from `Actor/Character/Boy/SeparateAnim/Walk.png`: the player's
+    walking sheet on the map, four directions of four 16 px frames.
+  - `tilesets/floor.png`, from `Backgrounds/Tilesets/TilesetFloor.png`: the grass and path tiles.
+  - `tilesets/nature.png`, from `Backgrounds/Tilesets/TilesetNature.png`: the trees and tall grass.
+  - `tilesets/water.png`, from `Backgrounds/Tilesets/TilesetWater.png`: the water and the bridge planks.
+  - `tilesets/house.png`, from `Backgrounds/Tilesets/TilesetHouse.png`: the door of the gate.
