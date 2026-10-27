@@ -37,6 +37,10 @@ make test
 
 `make test` fails when a test fails, when a test script cannot be loaded, or when nothing ran.
 
+`make test-tools` runs only the Python tests of the offline tools in `tools/`, and `make puzzles`
+rebuilds the puzzle subset in `game/data/puzzles/` from the Lichess dump (see
+[`CREDITS.md`](CREDITS.md) for where to get it).
+
 ## Android setup
 
 The commands below set up the Android build on macOS (Apple Silicon). Homebrew installs avoid

@@ -33,3 +33,7 @@ const PICKER_MIN_ELO := 400
 const PICKER_MAX_ELO := 2400
 const PICKER_TEMP_AT_MIN := 150.0
 const PICKER_TEMP_AT_MAX := 1.0
+
+## Puzzle bank: how far a puzzle's rating may be from the player's, in rating points. The window
+## widens by this same step when too few puzzles fall inside it.
+const PUZZLE_RATING_WINDOW := 150

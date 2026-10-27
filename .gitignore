@@ -7,3 +7,4 @@ native/*.nnue
 *.os
 *.o
 .sconsign.dblite
+__pycache__/
