@@ -76,3 +76,58 @@ custom_minimum_size = Vector2(0, 88)
 layout_mode = 2
 focus_mode = 0
 text = "Strong"
+
+[node name="ConfirmNewRun" type="Control" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Shade" type="ColorRect" parent="ConfirmNewRun"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.6)
+
+[node name="Center" type="CenterContainer" parent="ConfirmNewRun"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Plate" type="PanelContainer" parent="ConfirmNewRun/Center"]
+custom_minimum_size = Vector2(520, 0)
+layout_mode = 2
+
+[node name="Column" type="VBoxContainer" parent="ConfirmNewRun/Center/Plate"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="Question" type="Label" parent="ConfirmNewRun/Center/Plate/Column"]
+layout_mode = 2
+text = "Start a new run? Your saved run will be lost."
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="CancelButton" type="Button" parent="ConfirmNewRun/Center/Plate/Column"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 88)
+layout_mode = 2
+focus_mode = 0
+text = "Cancel"
+
+[node name="StartNewRunButton" type="Button" parent="ConfirmNewRun/Center/Plate/Column"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 88)
+layout_mode = 2
+focus_mode = 0
+text = "Start new run"

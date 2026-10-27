@@ -119,6 +119,53 @@ func test_new_run_opens_the_overworld_and_saves():
 		assert_eq(saved.to_dict(), main.run.to_dict())
 
 
+## A Main whose menu offers to continue the run of `start_run(1200, 42)`, already saved.
+func _main_with_a_saved_run() -> Main:
+	var main := _main()
+	main.start_run(1200, 42)
+	await wait_process_frames(1)
+	main.show_menu()
+	return main
+
+
+func test_with_a_save_a_preset_asks_before_starting_a_run():
+	var main: Main = await _main_with_a_saved_run()
+	var saved := FileAccess.get_file_as_string(PATH)
+	var confirm: Control = main.current_screen().get_node("%ConfirmNewRun")
+	assert_false(confirm.visible, "nothing to confirm yet")
+	_menu_button(main, "BeginnerButton").pressed.emit()
+	assert_true(main.current_screen() is MainMenu, "no run starts")
+	assert_null(main.run)
+	assert_true(confirm.visible, "the menu asks first")
+	await wait_process_frames(1)
+	assert_eq(FileAccess.get_file_as_string(PATH), saved, "the save is unchanged")
+
+
+func test_confirming_starts_the_new_run_over_the_save():
+	var main: Main = await _main_with_a_saved_run()
+	_menu_button(main, "StrongButton").pressed.emit()
+	_menu_button(main, "StartNewRunButton").pressed.emit()
+	assert_true(main.current_screen() is Overworld)
+	assert_eq(main.run.rating, Tuning.RATING_PRESETS["Strong"])
+	await wait_process_frames(1)
+	assert_eq(SaveStore.new(PATH).load_run().rating, Tuning.RATING_PRESETS["Strong"])
+
+
+func test_cancelling_keeps_the_save_and_the_menu():
+	var main: Main = await _main_with_a_saved_run()
+	var saved := FileAccess.get_file_as_string(PATH)
+	_menu_button(main, "ClubButton").pressed.emit()
+	_menu_button(main, "CancelButton").pressed.emit()
+	assert_true(main.current_screen() is MainMenu)
+	assert_false((main.current_screen().get_node("%ConfirmNewRun") as Control).visible)
+	assert_true(_menu_button(main, "ContinueButton").visible, "Continue is still offered")
+	await wait_process_frames(1)
+	assert_eq(FileAccess.get_file_as_string(PATH), saved, "the save is unchanged")
+	_menu_button(main, "ContinueButton").pressed.emit()
+	assert_true(main.current_screen() is Overworld)
+	assert_eq(main.run.rating, 1200, "the saved run resumes")
+
+
 func test_continue_restores_a_battle_in_progress():
 	var main := _main()
 	main.start_run(1200, 42)
