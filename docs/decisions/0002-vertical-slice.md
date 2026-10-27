@@ -127,7 +127,8 @@ These are inputs to the open-beta plan.
     - The two positions seen started at +700 and +434.
     - Retune `DECISIVE_CP` and `STRONG_MOVE_LIMIT` together, or use a win-chance threshold. Choose
       the strong records by their starting evaluation as well.
-  - **A strong battle costs 17 HP with best play, and much more with mistakes** (played).
+  - **A strong battle costs 17 HP with the hint followed on every move, and much more with
+    mistakes** (played).
     - In run 2, with the hint on every move, it cost 17 HP: 2 from engine noise on one move, and 15
       for the escape.
     - In run 1 it cost 58 HP. Two mistakes there were made on purpose for the checks: f3 for check 6
@@ -153,7 +154,8 @@ These are inputs to the open-beta plan.
     gone.
   - **The mistake arrow reads as advice** (played). After the enemy's reply, it can look like "play
     this now" rather than "you should have played this". The author will judge it.
-  - **Potions went unused** (played). Both runs ended with potions left.
+  - **No potion was needed in play** (played). Run 1 drank two, but only for check 7. Both runs
+    ended with potions left: one run with 1 and the other with 2.
   - **A zone takes about 3 minutes of adb play, mandatory encounters only** (played). The run that
     tried every encounter and check took 16 minutes. A human will take longer over the puzzles and
     the strong enemy's moves.
