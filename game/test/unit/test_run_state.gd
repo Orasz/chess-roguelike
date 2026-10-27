@@ -68,6 +68,18 @@ func test_potion_rules():
 	assert_eq(r.potions, Tuning.POTION_MAX)
 
 
+func test_a_potion_can_be_used_with_one_left_below_full_hp_while_alive():
+	var r := _run()
+	assert_false(r.can_use_potion(), "not at full HP")
+	r.take_damage(10)
+	assert_true(r.can_use_potion())
+	r.potions = 0
+	assert_false(r.can_use_potion(), "not without a potion")
+	r.potions = 1
+	r.take_damage(Tuning.MAX_HP)
+	assert_false(r.can_use_potion(), "not at 0 HP")
+
+
 func test_a_dead_run_cannot_drink():
 	var r := _run()
 	watch_signals(r)

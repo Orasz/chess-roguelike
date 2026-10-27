@@ -276,4 +276,4 @@ func _on_potion_pressed() -> void:
 func _refresh_hud() -> void:
 	_hp_label.text = tr("HP %d/%d") % [_run.hp, Tuning.MAX_HP]
 	_potion_button.text = tr("Potion ×%d") % _run.potions
-	_potion_button.disabled = _run.potions <= 0 or _run.hp <= 0 or _run.hp >= Tuning.MAX_HP
+	_potion_button.disabled = not _run.can_use_potion()
