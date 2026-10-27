@@ -51,3 +51,6 @@ const EXPLAIN_TIMEOUT_S := 5.0
 const EXPLAIN_MIN_DAMAGE := 5
 ## The most one frame adds to an engine wait, in seconds, so time in the background is one step.
 const MAX_WAIT_STEP_S := 0.25
+
+## UI: how long an HP bar takes to move to its new value, in seconds.
+const BAR_TWEEN_S := 0.4

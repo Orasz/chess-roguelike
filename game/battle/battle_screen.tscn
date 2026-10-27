@@ -1,0 +1,161 @@
+[gd_scene load_steps=6 format=3 uid="uid://buyo1bn27hhfe"]
+
+[ext_resource type="Script" path="res://battle/battle_screen.gd" id="1_screen"]
+[ext_resource type="Theme" uid="uid://ddmt1cv3jgick" path="res://ui/theme.tres" id="2_theme"]
+[ext_resource type="PackedScene" uid="uid://bo7tg1virwl3s" path="res://battle/board_view.tscn" id="3_board"]
+[ext_resource type="Texture2D" path="res://assets/ninja_adventure/characters/boy.png" id="4_hero"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_enemy_fill"]
+bg_color = Color(0.86, 0.3, 0.27, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[node name="BattleScreen" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("2_theme")
+script = ExtResource("1_screen")
+
+[node name="Backdrop" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.17, 0.3, 0.27, 1)
+
+[node name="Margin" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 16
+
+[node name="Column" type="VBoxContainer" parent="Margin"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_constants/separation = 10
+
+[node name="EnemyPlate" type="PanelContainer" parent="Margin/Column"]
+layout_mode = 2
+
+[node name="EnemyRow" type="HBoxContainer" parent="Margin/Column/EnemyPlate"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="EnemyInfo" type="VBoxContainer" parent="Margin/Column/EnemyPlate/EnemyRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+alignment = 1
+theme_override_constants/separation = 8
+
+[node name="EnemyName" type="Label" parent="Margin/Column/EnemyPlate/EnemyRow/EnemyInfo"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text_overrun_behavior = 3
+
+[node name="EnemyHp" type="ProgressBar" parent="Margin/Column/EnemyPlate/EnemyRow/EnemyInfo"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 22)
+layout_mode = 2
+theme_override_styles/fill = SubResource("StyleBoxFlat_enemy_fill")
+value = 100.0
+show_percentage = false
+
+[node name="EnemySprite" type="TextureRect" parent="Margin/Column/EnemyPlate/EnemyRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(114, 114)
+layout_mode = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Board" parent="Margin/Column" instance=ExtResource("3_board")]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="PlayerPlate" type="PanelContainer" parent="Margin/Column"]
+layout_mode = 2
+
+[node name="PlayerRow" type="HBoxContainer" parent="Margin/Column/PlayerPlate"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="PlayerFace" type="TextureRect" parent="Margin/Column/PlayerPlate/PlayerRow"]
+custom_minimum_size = Vector2(76, 76)
+layout_mode = 2
+texture = ExtResource("4_hero")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="PlayerInfo" type="VBoxContainer" parent="Margin/Column/PlayerPlate/PlayerRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+alignment = 1
+theme_override_constants/separation = 6
+
+[node name="PlayerTexts" type="HBoxContainer" parent="Margin/Column/PlayerPlate/PlayerRow/PlayerInfo"]
+layout_mode = 2
+
+[node name="PlayerName" type="Label" parent="Margin/Column/PlayerPlate/PlayerRow/PlayerInfo/PlayerTexts"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 32
+text = "You"
+
+[node name="PlayerHpLabel" type="Label" parent="Margin/Column/PlayerPlate/PlayerRow/PlayerInfo/PlayerTexts"]
+unique_name_in_owner = true
+layout_mode = 2
+horizontal_alignment = 2
+text = "HP 100/100"
+
+[node name="PlayerHp" type="ProgressBar" parent="Margin/Column/PlayerPlate/PlayerRow/PlayerInfo"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 22)
+layout_mode = 2
+value = 100.0
+show_percentage = false
+
+[node name="ItemBar" type="HBoxContainer" parent="Margin/Column"]
+layout_mode = 2
+
+[node name="PotionButton" type="Button" parent="Margin/Column/ItemBar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(220, 64)
+layout_mode = 2
+focus_mode = 0
+text = "Potion ×1"
+
+[node name="Spacer" type="Control" parent="Margin/Column/ItemBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ContinueButton" type="Button" parent="Margin/Column/ItemBar"]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(220, 64)
+layout_mode = 2
+focus_mode = 0
+text = "Continue"
+
+[node name="DialoguePanel" type="PanelContainer" parent="Margin/Column"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Dialogue" type="RichTextLabel" parent="Margin/Column/DialoguePanel"]
+unique_name_in_owner = true
+layout_mode = 2
+selection_enabled = false

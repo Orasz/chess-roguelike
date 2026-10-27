@@ -27,3 +27,14 @@ Everything the repository ships that someone else made, with its licence.
 - **Pixel Chess Pieces** by SpicyGame (CC0 1.0), from <https://spicygame.itch.io/chess-pieces>.
   Used in the board view: the twelve `color` pieces, `game/assets/chess_pieces/{white,black}_{pawn,knight,bishop,rook,queen,king}.png`.
   The licence note is in [`game/assets/chess_pieces/LICENSE.md`](game/assets/chess_pieces/LICENSE.md).
+
+- **Ninja Adventure Asset Pack** by pixel-boy (CC0 1.0), from <https://pixel-boy.itch.io/ninja-adventure-asset-pack>.
+  Used for the portraits on the battle screen: six of the pack's `Faceset.png` images (38x38 px),
+  renamed, in `game/assets/ninja_adventure/`. The pack's licence text is next to them, in
+  [`game/assets/ninja_adventure/LICENSE.txt`](game/assets/ninja_adventure/LICENSE.txt).
+  - `monsters/gold_racoon.png`, from `Actor/Monster/GoldRacoon/Faceset.png`: Greedy Pawn.
+  - `monsters/kappa_green.png`, from `Actor/Monster/KappaGreen/Faceset.png`: Sneaky Bishop.
+  - `monsters/bear.png`, from `Actor/Monster/Bear/Faceset.png`: Knight of the Centre.
+  - `characters/old_man_3.png`, from `Actor/Character/OldMan3/Faceset.png`: Opening Scholar.
+  - `bosses/demon_cyclop.png`, from `Actor/Boss/DemonCyclop/Faceset.png`: Gatekeeper Rook.
+  - `characters/boy.png`, from `Actor/Character/Boy/Faceset.png`: the player.
