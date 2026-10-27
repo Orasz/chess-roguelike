@@ -27,3 +27,9 @@ const STRONG_CANDIDATES := 5
 ## Engine: the search time for explanations, and how long a caller waits for the engine.
 const EXPLAIN_SEARCH_MS := 300
 const ENGINE_WAIT_S := 20.0
+
+## Move picker: the Elo range it covers, and its softmax temperature, in centipawns, at each end.
+const PICKER_MIN_ELO := 400
+const PICKER_MAX_ELO := 2400
+const PICKER_TEMP_AT_MIN := 150.0
+const PICKER_TEMP_AT_MAX := 1.0
