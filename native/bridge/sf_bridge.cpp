@@ -136,6 +136,18 @@ State& state() {
     return *s;
 }
 
+// Attacks and Zobrist tables, built once and read-only afterwards; shared by
+// the engine thread and validate_position().
+void init_tables() {
+    static std::once_flag init_once;
+    std::call_once(init_once, [] {
+        Stockfish::Attacks::init();
+        Stockfish::Position::init();
+    });
+}
+
+bool has_line_break(const std::string& s) { return s.find_first_of("\r\n") != std::string::npos; }
+
 // Search threads get 8 MB stacks in thread_native.h; the UCI loop gets the same.
 constexpr size_t kLoopStackSize = 8 * 1024 * 1024;
 
@@ -159,11 +171,7 @@ bool start() {
     if (s.running)
         return false;
 
-    static std::once_flag init_once;
-    std::call_once(init_once, [] {
-        Stockfish::Attacks::init();
-        Stockfish::Position::init();
-    });
+    init_tables();
 
     s.in.reopen();
     s.out.reset();
@@ -206,5 +214,29 @@ void stop() {
 }
 
 bool running() { return state().running; }
+
+bool validate_position(const std::string& fen, const std::vector<std::string>& moves) {
+    // A line break would split the command, so what Stockfish parses would differ.
+    if (has_line_break(fen))
+        return false;
+    for (const std::string& move : moves)
+        if (has_line_break(move))
+            return false;
+
+    init_tables();
+    std::deque<Stockfish::StateInfo> states(1);
+    Stockfish::Position              pos;
+    if (pos.set(fen, false, &states.back()).has_value())
+        return false;
+    for (const std::string& move : moves)
+    {
+        const Stockfish::Move m = Stockfish::UCIEngine::to_move(pos, move);
+        if (m == Stockfish::Move::none())
+            return false;
+        states.emplace_back();
+        pos.do_move(m, states.back());
+    }
+    return true;
+}
 
 }  // namespace sfbridge

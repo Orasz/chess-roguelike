@@ -45,6 +45,14 @@ void StockfishEngine::stop() {
 
 bool StockfishEngine::is_running() const { return owns_engine() && sfbridge::running(); }
 
+bool StockfishEngine::validate_position(const String& fen, const PackedStringArray& moves) {
+    std::vector<std::string> std_moves;
+    std_moves.reserve(moves.size());
+    for (int64_t i = 0; i < moves.size(); ++i)
+        std_moves.emplace_back(moves[i].utf8().get_data());
+    return sfbridge::validate_position(fen.utf8().get_data(), std_moves);
+}
+
 bool StockfishEngine::owns_engine() const { return owner.load() == this; }
 
 void StockfishEngine::_bind_methods() {
@@ -53,6 +61,8 @@ void StockfishEngine::_bind_methods() {
     ClassDB::bind_method(D_METHOD("poll_lines"), &StockfishEngine::poll_lines);
     ClassDB::bind_method(D_METHOD("stop"), &StockfishEngine::stop);
     ClassDB::bind_method(D_METHOD("is_running"), &StockfishEngine::is_running);
+    ClassDB::bind_static_method("StockfishEngine", D_METHOD("validate_position", "fen", "moves"),
+                                &StockfishEngine::validate_position);
 }
 
 }  // namespace godot

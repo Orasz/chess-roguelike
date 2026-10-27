@@ -3,9 +3,8 @@ extends Node
 ## The only GDScript entry point to Stockfish.
 ##
 ## Stockfish exits the whole process on a malformed command, so this class
-## builds every command from fixed templates and validates the FEN and move
-## syntax first. Moves passed to set_position() must also be legal: they must
-## come from the engine itself or from a legal-move generator.
+## builds every command from fixed templates, and set_position() refuses any
+## position or move that Stockfish's own checks would reject.
 
 signal ready_ok()
 signal evaluation(eval: EngineEval)
@@ -68,13 +67,16 @@ func set_full_strength() -> void:
 		push_error("UciEngine: strength can only change while the engine is ready")
 
 
-## Returns false, and sends nothing, if the FEN or any move fails validation.
+## Returns false, and sends nothing, if the FEN or any move fails validation:
+## first a cheap syntax check, then the same checks Stockfish itself runs.
 func set_position(fen: String, moves := PackedStringArray()) -> bool:
 	if _state != State.READY or not UciParser.is_valid_fen(fen):
 		return false
 	for move in moves:
 		if not UciParser.is_valid_uci_move(move):
 			return false
+	if not StockfishEngine.validate_position(fen, moves):
+		return false
 	var command := "position fen " + fen
 	if not moves.is_empty():
 		command += " moves " + " ".join(moves)

@@ -58,6 +58,20 @@ func test_every_polled_line_is_complete_uci():
 			assert_not_null(UciParser.parse_info(l), l)
 
 
+func test_validate_position_matches_stockfish():
+	var start := "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+	assert_true(StockfishEngine.validate_position(start, PackedStringArray()))
+	assert_true(StockfishEngine.validate_position(start, PackedStringArray(["e2e4", "e7e5"])))
+	assert_false(StockfishEngine.validate_position(start, PackedStringArray(["e2e5"])), "illegal move")
+	assert_false(StockfishEngine.validate_position(start, PackedStringArray(["e2e4\n"])), "line break in move")
+	assert_false(StockfishEngine.validate_position(
+			"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq e3 0 1", PackedStringArray()),
+			"en passant rank does not match the side to move")
+	assert_false(StockfishEngine.validate_position("4k3/4R3/8/8/8/8/8/4K3 w - - 0 1", PackedStringArray()),
+			"side not to move is in check")
+	assert_false(StockfishEngine.validate_position(start + "\n", PackedStringArray()), "line break in FEN")
+
+
 func test_second_instance_cannot_start():
 	var a := _new_engine()
 	var b := _new_engine()

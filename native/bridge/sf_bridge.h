@@ -23,4 +23,10 @@ void stop();
 
 bool running();
 
+// True if Stockfish would accept `position fen <fen> moves <moves...>`. It runs
+// the same checks as Engine::set_position (Position::set, then a legal-move
+// lookup for each move), which on failure make the UCI loop call std::exit.
+// Safe to call whether or not the engine is running.
+bool validate_position(const std::string& fen, const std::vector<std::string>& moves);
+
 }  // namespace sfbridge

@@ -63,6 +63,17 @@ func test_invalid_input_is_rejected_and_engine_stays_alive():
 	assert_true(await wait_for_signal(engine.best_move, 10), "engine still alive")
 
 
+func test_positions_stockfish_would_reject_never_reach_it():
+	watch_signals(engine)
+	# Each of these makes sf_19 call std::exit(1) if it is sent.
+	assert_false(engine.set_position("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq e3 0 1"))
+	assert_false(engine.set_position("4k3/4R3/8/8/8/8/8/4K3 w - - 0 1"))
+	assert_false(engine.set_position(UciEngine.START_FEN, PackedStringArray(["e2e5"])))
+	assert_true(engine.set_position(UciEngine.START_FEN))
+	engine.go_movetime(100)
+	assert_true(await wait_for_signal(engine.best_move, 10), "engine still alive")
+
+
 func test_free_during_search_then_restart():
 	engine.set_position(UciEngine.START_FEN)
 	engine.go_movetime(5000)

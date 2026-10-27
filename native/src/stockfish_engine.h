@@ -24,6 +24,8 @@ class StockfishEngine : public RefCounted {
     // Does nothing unless this instance owns the engine.
     void stop();
     bool is_running() const;
+    // True if Stockfish would accept this position; false where it would exit the process.
+    static bool validate_position(const String& fen, const PackedStringArray& moves);
 
    protected:
     static void _bind_methods();
