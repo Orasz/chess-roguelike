@@ -48,6 +48,19 @@ func test_strength_elo_is_clamped():
 	assert_eq(engine.set_strength_elo(1500), 1500)
 
 
+func test_configuration_is_refused_and_reported_while_searching():
+	engine.set_position(UciEngine.START_FEN)
+	assert_true(engine.go_movetime(2000))
+	assert_eq(engine.set_strength_elo(1500), -1, "nothing applied while searching")
+	assert_false(engine.set_full_strength())
+	assert_false(engine.new_game())
+
+
+func test_configuration_is_applied_when_ready():
+	assert_true(engine.set_full_strength())
+	assert_true(engine.new_game())
+
+
 func test_go_is_refused_while_searching():
 	engine.set_position(UciEngine.START_FEN)
 	assert_true(engine.go_movetime(2000))

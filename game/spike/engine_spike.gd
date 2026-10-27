@@ -50,7 +50,8 @@ func _on_check(request: Request) -> void:
 
 
 func _on_new_game() -> void:
-	engine.new_game()
+	if not engine.new_game():
+		return
 	moves.clear()
 	%MovesLabel.text = ""
 	%BestMoveLabel.text = ""

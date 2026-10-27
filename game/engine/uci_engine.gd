@@ -41,30 +41,33 @@ func is_ready() -> bool:
 	return _state == State.READY
 
 
-func new_game() -> void:
+## Returns false, and does nothing, unless the engine is ready.
+func new_game() -> bool:
 	if _state != State.READY:
-		return
+		return false
 	_state = State.STARTING
 	_engine.send("ucinewgame")
 	_engine.send("isready")
+	return true
 
 
-## Returns the Elo actually applied, clamped to [ELO_MIN, ELO_MAX].
+## Returns the Elo actually applied, clamped to [ELO_MIN, ELO_MAX], or -1 when
+## nothing was applied because the engine is not ready.
 func set_strength_elo(elo: int) -> int:
+	if _state != State.READY:
+		return -1
 	var applied := clampi(elo, ELO_MIN, ELO_MAX)
-	if _state == State.READY:
-		_engine.send("setoption name UCI_LimitStrength value true")
-		_engine.send("setoption name UCI_Elo value %d" % applied)
-	else:
-		push_error("UciEngine: strength can only change while the engine is ready")
+	_engine.send("setoption name UCI_LimitStrength value true")
+	_engine.send("setoption name UCI_Elo value %d" % applied)
 	return applied
 
 
-func set_full_strength() -> void:
-	if _state == State.READY:
-		_engine.send("setoption name UCI_LimitStrength value false")
-	else:
-		push_error("UciEngine: strength can only change while the engine is ready")
+## Returns false, and does nothing, unless the engine is ready.
+func set_full_strength() -> bool:
+	if _state != State.READY:
+		return false
+	_engine.send("setoption name UCI_LimitStrength value false")
+	return true
 
 
 ## Returns false, and sends nothing, if the FEN or any move fails validation:
