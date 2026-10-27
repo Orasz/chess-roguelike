@@ -12,6 +12,8 @@ if env["platform"] == "macos" and env["arch"] != "arm64":
 
 gd = env.Clone()                  # Godot-side code; never append to env itself (it leaks into godot-cpp)
 gd.Append(CPPPATH=["src/"])
+if env["platform"] == "android":
+    gd.Append(LIBS=["log"])       # __android_log_write in the bridge
 
 sf = env.Clone()                  # Stockfish + bridge share exactly these defines
 sf.Append(CPPDEFINES=["IS_64BIT", "USE_POPCNT", ("USE_NEON", 8)])

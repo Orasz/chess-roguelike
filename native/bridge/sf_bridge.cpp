@@ -3,6 +3,7 @@
 #include <pthread.h>
 
 #include <atomic>
+#include <cstdio>
 #include <condition_variable>
 #include <deque>
 #include <iostream>
@@ -10,6 +11,10 @@
 #include <mutex>
 #include <streambuf>
 #include <utility>
+
+#ifdef __ANDROID__
+    #include <android/log.h>
+#endif
 
 // Same includes and init sequence as Stockfish's src/main.cpp.
 #include "../thirdparty/Stockfish/src/attacks.h"
@@ -19,6 +24,20 @@
 #include "../thirdparty/Stockfish/src/uci.h"
 
 namespace {
+
+// Writes one line to the platform log: logcat on Android, stderr elsewhere.
+// Used for what must survive Stockfish calling std::exit, since nobody will
+// drain the output buffer after that.
+void log_line(bool error, const std::string& line) {
+#ifdef __ANDROID__
+    __android_log_write(error ? ANDROID_LOG_ERROR : ANDROID_LOG_INFO, "stockfish", line.c_str());
+#else
+    (void) error;
+    std::fprintf(stderr, "stockfish: %s\n", line.c_str());
+#endif
+}
+
+bool starts_with(const std::string& s, const char* prefix) { return s.rfind(prefix, 0) == 0; }
 
 // Engine stdin. Stockfish's getline(std::cin) blocks in underflow() until a
 // command arrives; after close() it reads EOF, which the UCI loop treats as quit.
@@ -107,6 +126,7 @@ class LineBuf : public std::streambuf {
     void put(char c) {
         if (c == '\n')
         {
+            mirror(current_);
             lines_.push_back(std::move(current_));
             current_.clear();
         }
@@ -114,16 +134,67 @@ class LineBuf : public std::streambuf {
             current_.push_back(c);
     }
 
+    // Stockfish prints this right before std::exit(1) (UCIEngine::terminate_on_critical_error).
+    static void mirror(const std::string& line) {
+        if (starts_with(line, "info string CRITICAL ERROR"))
+            log_line(true, line);
+#if defined(__ANDROID__) && defined(DEBUG_ENABLED)
+        else if (starts_with(line, "info string"))
+            log_line(false, line);
+#endif
+    }
+
     std::mutex              mutex_;
     std::string             current_;
     std::deque<std::string> lines_;
 };
 
+#ifdef __ANDROID__
+// Android drops an app's stderr, where Stockfish reports allocation, thread and
+// network failures; while the engine runs, std::cerr goes to logcat instead.
+class LogcatBuf : public std::streambuf {
+   protected:
+    int_type overflow(int_type ch) override {
+        if (!traits_type::eq_int_type(ch, traits_type::eof()))
+        {
+            std::lock_guard<std::mutex> lock(mutex_);
+            put(traits_type::to_char_type(ch));
+        }
+        return traits_type::not_eof(ch);
+    }
+
+    std::streamsize xsputn(const char* s, std::streamsize n) override {
+        std::lock_guard<std::mutex> lock(mutex_);
+        for (std::streamsize i = 0; i < n; ++i)
+            put(s[i]);
+        return n;
+    }
+
+   private:
+    void put(char c) {
+        if (c == '\n')
+        {
+            log_line(true, current_);
+            current_.clear();
+        }
+        else if (c != '\r')
+            current_.push_back(c);
+    }
+
+    std::mutex  mutex_;
+    std::string current_;
+};
+#endif
+
 struct State {
-    InputBuf          in;
-    LineBuf           out;
-    std::streambuf*   saved_in  = nullptr;
-    std::streambuf*   saved_out = nullptr;
+    InputBuf        in;
+    LineBuf         out;
+    std::streambuf* saved_in  = nullptr;
+    std::streambuf* saved_out = nullptr;
+#ifdef __ANDROID__
+    LogcatBuf       err;
+    std::streambuf* saved_err = nullptr;
+#endif
     pthread_t         thread{};
     std::atomic<bool> running{false};
     std::mutex        lifecycle;
@@ -134,6 +205,14 @@ struct State {
 State& state() {
     static State* s = new State;
     return *s;
+}
+
+void restore_streams(State& s) {
+    std::cin.rdbuf(s.saved_in);
+    std::cout.rdbuf(s.saved_out);
+#ifdef __ANDROID__
+    std::cerr.rdbuf(s.saved_err);
+#endif
 }
 
 // Attacks and Zobrist tables, built once and read-only afterwards; shared by
@@ -177,6 +256,9 @@ bool start() {
     s.out.reset();
     s.saved_in  = std::cin.rdbuf(&s.in);
     s.saved_out = std::cout.rdbuf(&s.out);
+#ifdef __ANDROID__
+    s.saved_err = std::cerr.rdbuf(&s.err);
+#endif
 
     pthread_attr_t attr;
     pthread_attr_init(&attr);
@@ -185,8 +267,7 @@ bool start() {
     pthread_attr_destroy(&attr);
     if (rc != 0)
     {
-        std::cin.rdbuf(s.saved_in);
-        std::cout.rdbuf(s.saved_out);
+        restore_streams(s);
         return false;
     }
     s.running = true;
@@ -209,8 +290,7 @@ void stop() {
     s.in.push("quit");
     s.in.close();
     pthread_join(s.thread, nullptr);
-    std::cin.rdbuf(s.saved_in);
-    std::cout.rdbuf(s.saved_out);
+    restore_streams(s);
     s.running = false;
 }
 
