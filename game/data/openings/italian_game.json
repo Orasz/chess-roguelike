@@ -1,0 +1,193 @@
+{
+  "version": 1,
+  "id": "italian_game",
+  "side": "white",
+  "name": {
+    "en": "Italian Game",
+    "it": "Partita Italiana"
+  },
+  "plans": {
+    "en": "The Italian Game puts the bishop on c4, where it eyes f7, Black's weakest square in the opening. White then fights for the centre in one of two ways: the sharp c3 and d4, which build a broad pawn centre, or the slow d3 and castling, which keep the position closed. In both cases White develops quickly and castles early, because the king is safest before the centre opens. The break d4 is the central idea: it comes when the pieces are ready, and the open files then favour the side with the better development.",
+    "it": "La Partita Italiana porta l'alfiere in c4, dove prende di mira f7, il punto più debole del Nero nell'apertura. Il Bianco lotta poi per il centro in due modi: con c3 e d4, che costruiscono un ampio centro di pedoni, oppure con d3 e l'arrocco, che mantengono la posizione chiusa. In entrambi i casi sviluppa in fretta e arrocca presto, perché il re è più al sicuro prima che il centro si apra. La spinta d4 è l'idea centrale: arriva quando i pezzi sono pronti, e le colonne aperte favoriscono chi ha lo sviluppo migliore."
+  },
+  "start_fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+  "line": [
+    {
+      "move": "e2e4",
+      "why": {
+        "en": "Claim the centre with a pawn, and open diagonals for the queen and the king's bishop.",
+        "it": "Occupa il centro con un pedone e apre le diagonali alla donna e all'alfiere di re."
+      },
+      "replies": [
+        {
+          "move": "e7e5",
+          "next": [
+            {
+              "move": "g1f3",
+              "why": {
+                "en": "The knight develops towards the centre and attacks the e5 pawn, so Black has to defend it. It also brings the king closer to castling.",
+                "it": "Il cavallo si sviluppa verso il centro e attacca il pedone e5, costringendo il Nero a difenderlo. In più avvicina l'arrocco."
+              },
+              "replies": [
+                {
+                  "move": "b8c6",
+                  "next": [
+                    {
+                      "move": "f1c4",
+                      "why": {
+                        "en": "The bishop takes its most active diagonal and aims at f7, which only the king defends. It also leaves f1 free, so White can castle soon.",
+                        "it": "L'alfiere occupa la diagonale più attiva e punta f7, difeso soltanto dal re. In più libera f1, così il Bianco potrà arroccare presto."
+                      },
+                      "replies": [
+                        {
+                          "move": "f8c5",
+                          "next": [
+                            {
+                              "move": "c2c3",
+                              "why": {
+                                "en": "It prepares the central advance d4, which would attack the e5 pawn and the bishop on c5 together. The pawn on c3 also takes the b4 and d4 squares away from Black's pieces.",
+                                "it": "Prepara l'avanzata centrale d4, che attaccherebbe insieme il pedone e5 e l'alfiere in c5. Il pedone in c3 toglie inoltre le case b4 e d4 ai pezzi neri."
+                              },
+                              "replies": [
+                                {
+                                  "move": "g8f6",
+                                  "next": [
+                                    {
+                                      "move": "d2d4",
+                                      "why": {
+                                        "en": "It attacks the e5 pawn and the bishop on c5 at once. If Black takes on d4, White retakes with the c-pawn, keeps a strong pawn centre and attacks the bishop again.",
+                                        "it": "Attacca contemporaneamente il pedone e5 e l'alfiere in c5. Se il Nero prende in d4, il Bianco riprende con il pedone c, conserva un forte centro di pedoni e attacca di nuovo l'alfiere."
+                                      },
+                                      "replies": [
+                                        {
+                                          "move": "e5d4",
+                                          "next": [
+                                            {
+                                              "move": "c3d4",
+                                              "why": {
+                                                "en": "Retaking with the c-pawn keeps two pawns side by side in the centre, on d4 and e4, and attacks the bishop on c5 again.",
+                                                "it": "Riprendere con il pedone c mantiene due pedoni affiancati al centro, in d4 e in e4, e attacca di nuovo l'alfiere in c5."
+                                              },
+                                              "replies": [
+                                                {
+                                                  "move": "c5b4",
+                                                  "next": [
+                                                    {
+                                                      "move": "c1d2",
+                                                      "why": {
+                                                        "en": "It blocks the check with a developing move. If Black plays Bxd2+, White retakes with Nbd2, developing another piece while still guarding the e4 pawn.",
+                                                        "it": "Para lo scacco con una mossa di sviluppo. Se il Nero gioca Axd2+, il Bianco riprende con Cbd2, sviluppando un altro pezzo e continuando a difendere il pedone e4."
+                                                      },
+                                                      "replies": []
+                                                    },
+                                                    {
+                                                      "move": "b1c3",
+                                                      "why": {
+                                                        "en": "The sharper way to block the check: the knight develops and White lets Black take the e4 pawn. After ...Nxe4 and castling, the lead in development and the open lines give White strong pressure in return for the pawn.",
+                                                        "it": "Il modo più aggressivo di parare lo scacco: il cavallo si sviluppa e il Bianco lascia prendere il pedone e4. Dopo Cxe4 e l'arrocco, il vantaggio di sviluppo e le linee aperte danno al Bianco una forte iniziativa in cambio del pedone."
+                                                      },
+                                                      "replies": []
+                                                    }
+                                                  ]
+                                                }
+                                              ]
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "move": "d2d3",
+                              "why": {
+                                "en": "The quiet Giuoco Pianissimo: d3 supports the e4 pawn and opens the diagonal of the bishop on c1. White keeps the centre closed and finishes its development before deciding how to open it.",
+                                "it": "Il tranquillo Giuoco Pianissimo: d3 sostiene il pedone e4 e apre la diagonale dell'alfiere di c1. Il Bianco mantiene il centro chiuso e completa lo sviluppo prima di decidere come aprirlo."
+                              },
+                              "replies": [
+                                {
+                                  "move": "g8f6",
+                                  "next": [
+                                    {
+                                      "move": "c2c3",
+                                      "why": {
+                                        "en": "It prepares the central break d4 and takes the b4 square away from Black's bishop. With pawns on c3 and d3 White has a solid base and can choose the moment to open the centre.",
+                                        "it": "Prepara la rottura centrale d4 e toglie la casa b4 all'alfiere nero. Con i pedoni in c3 e in d3 il Bianco ha una base solida e può scegliere il momento giusto per aprire il centro."
+                                      },
+                                      "replies": [
+                                        {
+                                          "move": "d7d6",
+                                          "next": [
+                                            {
+                                              "move": "e1g1",
+                                              "why": {
+                                                "en": "Castling puts the king in safety and brings the h1 rook into play. With the king safe, White can calmly prepare Nbd2 and the break d4.",
+                                                "it": "L'arrocco mette il re al sicuro e porta in gioco la torre di h1. Con il re al sicuro, il Bianco può preparare con calma Cbd2 e la spinta d4."
+                                              },
+                                              "replies": []
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "move": "g8f6",
+                          "next": [
+                            {
+                              "move": "d2d3",
+                              "why": {
+                                "en": "It defends the e4 pawn against the knight on f6 and keeps the game quiet: White avoids the sharp lines with Ng5 and builds up slowly, in the calm style of the Italian Game.",
+                                "it": "Difende il pedone e4 dal cavallo in f6 e mantiene il gioco tranquillo: il Bianco evita le linee affilate con Cg5 e costruisce lentamente la posizione, nello stile calmo della Partita Italiana."
+                              },
+                              "replies": [
+                                {
+                                  "move": "f8c5",
+                                  "next": [
+                                    {
+                                      "move": "c2c3",
+                                      "why": {
+                                        "en": "It prepares the central break d4 and takes the b4 square away from Black's bishop. With pawns on c3 and d3 White has a solid base and can choose the moment to open the centre.",
+                                        "it": "Prepara la rottura centrale d4 e toglie la casa b4 all'alfiere nero. Con i pedoni in c3 e in d3 il Bianco ha una base solida e può scegliere il momento giusto per aprire il centro."
+                                      },
+                                      "replies": [
+                                        {
+                                          "move": "d7d6",
+                                          "next": [
+                                            {
+                                              "move": "e1g1",
+                                              "why": {
+                                                "en": "Castling puts the king in safety and brings the h1 rook into play. With the king safe, White can calmly prepare Nbd2 and the break d4.",
+                                                "it": "L'arrocco mette il re al sicuro e porta in gioco la torre di h1. Con il re al sicuro, il Bianco può preparare con calma Cbd2 e la spinta d4."
+                                              },
+                                              "replies": []
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
