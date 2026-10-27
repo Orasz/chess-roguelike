@@ -8,9 +8,10 @@ const _PIECES := "prnbqkPRNBQK"
 
 
 ## Returns null unless `line` is an `info` line that carries a score.
+## `info string` lines are free text, so a word "score" in them means nothing.
 static func parse_info(line: String) -> EngineEval:
 	var tokens := line.split(" ", false)
-	if tokens.is_empty() or tokens[0] != "info" or not tokens.has("score"):
+	if tokens.size() < 2 or tokens[0] != "info" or tokens[1] == "string" or not tokens.has("score"):
 		return null
 	var e := EngineEval.new()
 	var i := 1

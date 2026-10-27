@@ -34,6 +34,7 @@ func test_parse_info_ignores_lines_without_score():
 	assert_null(UciParser.parse_info("info depth 10 currmove e2e4 currmovenumber 1"))
 	assert_null(UciParser.parse_info("info string NNUE evaluation using nn-1a298aa575a0.nnue"))
 	assert_null(UciParser.parse_info("readyok"))
+	assert_null(UciParser.parse_info("info string the score is fine"))
 
 
 func test_parse_bestmove():
