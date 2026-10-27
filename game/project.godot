@@ -8,6 +8,10 @@ config/name="Chess Roguelike"
 run/main_scene="res://spike/engine_spike.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 
+[autoload]
+
+ChessEngine="*res://engine/uci_engine.gd"
+
 [display]
 
 window/size/viewport_width=720

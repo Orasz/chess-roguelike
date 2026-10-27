@@ -9,11 +9,17 @@ extends Node
 signal ready_ok()
 signal evaluation(eval: EngineEval)
 signal best_move(move: String)
+## Emitted right after `best_move`, once the engine is READY again. `lines` holds
+## the latest `EngineEval` seen for each `multipv` index during the search,
+## ordered by index.
+signal search_finished(move: String, lines: Array)
 
 const START_FEN := "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 ## Stockfish silently ignores UCI_Elo values outside this range.
 const ELO_MIN := 1320
 const ELO_MAX := 3190
+## The most candidate lines one search may report.
+const MULTIPV_MAX := 8
 
 enum State { STOPPED, STARTING, READY, SEARCHING }
 
@@ -22,6 +28,8 @@ var last_eval: EngineEval = null
 
 var _state := State.STOPPED
 var _engine: StockfishEngine = null
+## The latest `info` line of the running search, by `multipv` index.
+var _lines: Dictionary = {}
 
 
 func start() -> bool:
@@ -62,6 +70,16 @@ func set_strength_elo(elo: int) -> int:
 	return applied
 
 
+## Returns the number of lines the next searches report, clamped to
+## [1, MULTIPV_MAX], or -1 when nothing was applied because the engine is not ready.
+func set_multipv(n: int) -> int:
+	if _state != State.READY:
+		return -1
+	var applied := clampi(n, 1, MULTIPV_MAX)
+	_engine.send("setoption name MultiPV value %d" % applied)
+	return applied
+
+
 ## Returns false, and does nothing, unless the engine is ready.
 func set_full_strength() -> bool:
 	if _state != State.READY:
@@ -92,6 +110,7 @@ func go_movetime(ms: int) -> bool:
 	if _state != State.READY or ms <= 0:
 		return false
 	_state = State.SEARCHING
+	_lines = {}
 	_engine.send("go movetime %d" % ms)
 	return true
 
@@ -134,11 +153,22 @@ func _handle_line(line: String) -> void:
 			ready_ok.emit()
 	elif line.begins_with("info "):
 		var eval := UciParser.parse_info(line)
-		if eval != null and eval.multipv == 1:
+		if eval == null:
+			return
+		_lines[eval.multipv] = eval
+		if eval.multipv == 1:
 			last_eval = eval
 			evaluation.emit(eval)
 	else:
 		var move := UciParser.parse_bestmove(line)
 		if move != "" and _state == State.SEARCHING:
+			# Build the result before emitting: a best_move handler may start the
+			# next search, which resets _lines.
+			var lines: Array = []
+			var indices := _lines.keys()
+			indices.sort()
+			for index in indices:
+				lines.append(_lines[index])
 			_state = State.READY
 			best_move.emit(move)
+			search_finished.emit(move, lines)

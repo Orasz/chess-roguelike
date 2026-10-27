@@ -111,3 +111,48 @@ func test_free_during_search_then_restart():
 	add_child_autofree(engine)
 	assert_true(engine.start())
 	assert_true(await wait_for_signal(engine.ready_ok, 15), "restarted")
+
+
+func test_multipv_reports_every_line():
+	watch_signals(engine)
+	assert_eq(engine.set_multipv(3), 3)
+	engine.set_position(UciEngine.START_FEN); engine.go_movetime(300)
+	assert_true(await wait_for_signal(engine.search_finished, 10))
+	var params: Array = get_signal_parameters(engine, "search_finished")
+	assert_eq(params[1].map(func(l): return l.multipv), [1, 2, 3])
+	assert_has(params[1].map(func(l): return l.pv[0]), params[0])
+
+
+func test_multipv_is_clamped_and_refused_while_searching():
+	assert_eq(engine.set_multipv(0), 1); assert_eq(engine.set_multipv(99), UciEngine.MULTIPV_MAX)
+	engine.set_position(UciEngine.START_FEN); engine.go_movetime(1000)
+	assert_eq(engine.set_multipv(2), -1)
+
+
+func test_search_finished_arrives_with_the_engine_ready_again():
+	var ready_then := []
+	engine.search_finished.connect(func(_move, _lines): ready_then.append(engine.is_ready()))
+	engine.set_position(UciEngine.START_FEN); engine.go_movetime(100)
+	assert_true(await wait_for_signal(engine.search_finished, 10))
+	assert_eq(ready_then, [true])
+
+
+func test_evaluation_still_reports_only_the_best_line():
+	var reported := []
+	engine.evaluation.connect(func(e): reported.append(e.multipv))
+	engine.set_multipv(3)
+	engine.set_position(UciEngine.START_FEN); engine.go_movetime(200)
+	assert_true(await wait_for_signal(engine.search_finished, 10))
+	assert_false(reported.is_empty())
+	assert_eq(reported.filter(func(index): return index != 1), [])
+
+
+func test_a_best_move_handler_can_start_the_next_search_without_losing_the_lines():
+	var started := []
+	engine.best_move.connect(func(_move): started.append(engine.go_movetime(100)), CONNECT_ONE_SHOT)
+	watch_signals(engine)
+	engine.set_multipv(2)
+	engine.set_position(UciEngine.START_FEN); engine.go_movetime(200)
+	assert_true(await wait_for_signal(engine.search_finished, 10))
+	assert_eq(started, [true])
+	assert_eq(get_signal_parameters(engine, "search_finished")[1].size(), 2)
