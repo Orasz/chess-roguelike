@@ -1,0 +1,39 @@
+[gd_scene load_steps=2 format=3 uid="uid://bo7tg1virwl3s"]
+
+[ext_resource type="Script" uid="uid://cnopfe0gc10ho" path="res://battle/board_view.gd" id="1_board"]
+
+[node name="BoardView" type="Control"]
+texture_filter = 1
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("1_board")
+
+[node name="PromotionPicker" type="HBoxContainer" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 0
+theme_override_constants/separation = 0
+
+[node name="Queen" type="Button" parent="PromotionPicker"]
+layout_mode = 2
+focus_mode = 0
+icon_alignment = 1
+expand_icon = true
+
+[node name="Rook" type="Button" parent="PromotionPicker"]
+layout_mode = 2
+focus_mode = 0
+icon_alignment = 1
+expand_icon = true
+
+[node name="Bishop" type="Button" parent="PromotionPicker"]
+layout_mode = 2
+focus_mode = 0
+icon_alignment = 1
+expand_icon = true
+
+[node name="Knight" type="Button" parent="PromotionPicker"]
+layout_mode = 2
+focus_mode = 0
+icon_alignment = 1
+expand_icon = true
