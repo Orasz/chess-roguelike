@@ -15,6 +15,10 @@ const MATE_FEN := "6k1/5ppp/8/8/8/8/r4PPP/R5K1 b - - 0 1"
 const HANGING_KNIGHT := "4k3/8/8/2p5/1N6/8/8/4K3 w - - 0 1"
 ## Black pawns on b5 and d5 attack the white pawn on e4 and the white queen on c4.
 const TWO_TARGETS := "4k3/8/8/1p1p4/2Q1P3/8/8/7K w - - 0 1"
+## Queens face each other on the open d-file; each one is defended by its own rook.
+const QUEEN_TRADE := "r2q2k1/p6p/8/8/8/8/P6P/R2Q2K1 w - - 0 1"
+## QUEEN_TRADE without the a7 pawn, so the black rook sees down the a-file.
+const OPEN_A_FILE := "r2q2k1/7p/8/8/8/8/P6P/R2Q2K1 w - - 0 1"
 
 
 func _reply(mate: bool, value: int, pv: Array) -> EngineEval:
@@ -57,13 +61,34 @@ func test_generic_sentence_without_material_change():
 		"After a3, the best reply is e5.")
 
 
-func test_material_lost_a_few_plies_later_still_counts():
+func test_material_lost_a_few_plies_later_names_the_capture():
 	var pv := ["e8d8", "d1e1", "c5b4"]
 	assert_eq(ExplanationBuilder.after_mistake(HANGING_KNIGHT, "e1d1", _reply(false, 300, pv)),
-		"After Kd1, Kd8 wins your knight.")
+		"After Kd1, cxb4 wins your knight.")
 
 
-func test_only_three_plies_of_the_line_are_replayed():
+func test_a_queen_taken_on_the_third_ply_names_that_capture():
+	# h6 h3 Qxd1+ Kh2: the queen falls on the opponent's second move, and nothing takes it back.
+	var pv := ["h7h6", "h2h3", "d8d1", "g1h2"]
+	assert_eq(ExplanationBuilder.after_mistake(QUEEN_TRADE, "a2a3", _reply(false, 900, pv)),
+		"After a3, Qxd1 wins your queen.")
+
+
+func test_an_even_trade_is_not_a_lost_piece():
+	# h6 h3 Qxd1+ Rxd1: the mover's fourth-ply recapture evens the queens out.
+	var pv := ["h7h6", "h2h3", "d8d1", "a1d1"]
+	assert_eq(ExplanationBuilder.after_mistake(QUEEN_TRADE, "a2a3", _reply(false, 30, pv)),
+		"After a3, the best reply is h6.")
+
+
+func test_the_window_ends_on_the_fourth_ply_of_the_line():
+	# The recapture on the fourth ply counts; Rxa3 on the fifth, which wins a pawn, does not.
+	var pv := ["h7h6", "h2h3", "d8d1", "a1d1", "a8a3"]
+	assert_eq(ExplanationBuilder.after_mistake(OPEN_A_FILE, "a2a3", _reply(false, 100, pv)),
+		"After a3, the best reply is h6.")
+
+
+func test_only_four_plies_of_the_line_are_replayed():
 	var pv := ["e8d8", "d1e1", "d8e8", "e1d1", "c5b4"]
 	assert_eq(ExplanationBuilder.after_mistake(HANGING_KNIGHT, "e1d1", _reply(false, 300, pv)),
 		"After Kd1, the best reply is Kd8.")
@@ -76,10 +101,11 @@ func test_replay_stops_at_the_first_illegal_move_of_the_line():
 			"After Kd1, the best reply is Kd8.", bad_move)
 
 
-func test_the_most_valuable_lost_piece_is_named():
+func test_the_most_valuable_lost_piece_is_named_with_the_move_that_takes_it():
+	# dxe4 takes a pawn first; bxc4, two plies later, takes the queen.
 	var pv := ["d5e4", "h2g3", "b5c4"]
 	assert_eq(ExplanationBuilder.after_mistake(TWO_TARGETS, "h1h2", _reply(false, 900, pv)),
-		"After Kh2, dxe4 wins your queen.")
+		"After Kh2, bxc4 wins your queen.")
 
 
 func test_black_is_the_mover_when_it_is_black_to_move():

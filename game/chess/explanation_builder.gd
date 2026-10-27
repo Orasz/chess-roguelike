@@ -14,8 +14,9 @@ const _THEME_PRIORITY: Array[String] = [
 	"attraction", "deflection", "capturingDefender", "interference", "clearance",
 	"exposedKing", "promotion",
 ]
-## How many plies of the engine's line are replayed to see what a mistake costs.
-const _REPLAYED_PLIES := 3
+## How many plies of the engine's line are replayed to see what a mistake costs. An even
+## number, so the window ends on the mover's recapture when the line has one.
+const _REPLAYED_PLIES := 4
 ## The smallest material drop, in centipawns, that counts as losing a piece.
 const _MATERIAL_DROP := 100
 ## FEN letters of the piece types the mover can lose, most valuable first.
@@ -38,8 +39,8 @@ static func theme_name(themes: PackedStringArray) -> String:
 ## engine's best line in the position after the wrong move, from the opponent's point
 ## of view. Moves are written in SAN without check or mate suffixes. In order, it
 ## says that the reply is checkmate, that the opponent has a longer mate, that the
-## reply wins one of the mover's pieces (the most valuable one the line takes within
-## `_REPLAYED_PLIES` plies), or else just what the best reply is.
+## line wins one of the mover's pieces (see `_lost_piece`), naming the opponent's move
+## that takes it, or else just what the best reply is.
 ## Returns "" when `wrong_uci` is illegal in `fen`, or when the sentence needs the
 ## reply's first move and the line has none or it is illegal.
 static func after_mistake(fen: String, wrong_uci: String, reply: EngineEval) -> String:
@@ -57,34 +58,43 @@ static func after_mistake(fen: String, wrong_uci: String, reply: EngineEval) -> 
 		return _translator.tr("After %s, %s is checkmate.") % [wrong, best]
 	var lost := _lost_piece(fen, wrong_uci, reply.pv)
 	if not lost.is_empty():
-		return _translator.tr("After %s, %s wins your %s.") % [wrong, best, lost]
+		return _translator.tr("After %s, %s wins your %s.") % [wrong, lost.move, lost.piece]
 	return _translator.tr("After %s, the best reply is %s.") % [wrong, best]
 
 
-## The translated name of the most valuable piece type the mover loses when `wrong_uci`
-## is followed by the first plies of `line`, or "" when the mover's material balance
-## does not fall by `_MATERIAL_DROP` or none of the mover's piece counts went down
-## (the opponent promoted, for instance). The replay stops at the first illegal move.
-static func _lost_piece(fen: String, wrong_uci: String, line: PackedStringArray) -> String:
+## What the mover loses when `wrong_uci` is followed by the first `_REPLAYED_PLIES` plies
+## of `line`, as {piece: the translated name of the most valuable piece type whose count
+## went down, move: the SAN, without suffix, of the first opponent move in the window
+## that took a piece of that type}. Returns {} when the mover's material balance at the
+## end of the window has not fallen by `_MATERIAL_DROP`, or when no opponent move took
+## a piece of a type whose count went down (the opponent promoted, for instance).
+## The replay stops at the first illegal move. `wrong_uci` and the first move of `line`
+## must be legal.
+static func _lost_piece(fen: String, wrong_uci: String, line: PackedStringArray) -> Dictionary:
 	var mover := ChessRules.side_to_move(fen)
 	var opponent := "b" if mover == "w" else "w"
 	var moves := PackedStringArray([wrong_uci])
-	var last := ChessRules.fen_after(fen, moves)
+	# positions[i] is the position before line[i]; the opponent plays the even plies.
+	var positions: Array[String] = [ChessRules.fen_after(fen, moves)]
 	for move in line.slice(0, _REPLAYED_PLIES):
 		moves.append(move)
 		var next := ChessRules.fen_after(fen, moves)
 		if next.is_empty():
 			break
-		last = next
+		positions.append(next)
+	var last: String = positions.back()
 	var before := ChessRules.material(fen, mover) - ChessRules.material(fen, opponent)
 	var after := ChessRules.material(last, mover) - ChessRules.material(last, opponent)
 	if before - after < _MATERIAL_DROP:
-		return ""
+		return {}
 	for letter in _LOSABLE_PIECES:
 		var piece := letter.to_upper() if mover == "w" else letter
-		if _count(last, piece) < _count(fen, piece):
-			return _translated_piece(letter)
-	return ""
+		if _count(last, piece) >= _count(fen, piece):
+			continue
+		for ply in range(0, positions.size() - 1, 2):
+			if _count(positions[ply + 1], piece) < _count(positions[ply], piece):
+				return {"piece": _translated_piece(letter), "move": ChessRules.san(positions[ply], line[ply], false)}
+	return {}
 
 
 ## How many pieces of FEN letter `piece` are on the board of `fen`.
