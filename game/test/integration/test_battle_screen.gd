@@ -88,6 +88,17 @@ func test_board_fits_a_3_by_4_window():
 	await wait_process_frames(2)
 	assert_eq(_board().size.x, 640.0, "taller windows get the full board back")
 
+func test_board_fits_the_viewport_of_a_3_by_4_window():
+	# Stretch expand turns a 3:4 window into a 960x1280 viewport.
+	window.size = Vector2(960, 1280)
+	await wait_process_frames(2)
+	var board := _board()
+	var panel: Control = screen.get_node("%Dialogue").get_parent()
+	assert_eq(board.size, Vector2(640, 640))
+	assert_almost_eq(board.global_position.x + board.size.x / 2.0, 480.0, 0.5, "centred")
+	assert_gte(panel.size.y, float(Tuning.DIALOGUE_MIN_HEIGHT), "the dialogue box keeps its least height")
+	assert_true(panel.get_global_rect().end.y <= 1280.0, "the dialogue ends inside the window")
+
 func test_a_narrower_screen_gets_a_smaller_multiple_of_128():
 	window.size = Vector2(600, 1200)
 	await wait_process_frames(2)

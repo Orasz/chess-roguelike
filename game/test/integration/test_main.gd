@@ -361,9 +361,22 @@ func _main_that_counts_quits() -> Main:
 
 
 func test_the_window_aspect_follows_its_shape():
-	var main := _main()
-	var root := main.get_tree().root
-	assert_eq(root.content_scale_aspect, ScreenFit.aspect_for(root.size))
+	# The headless root is a 64x64 window (square, so pillarboxed) whatever the project's own aspect.
+	var root := get_tree().root
+	var original := root.size
+	assert_eq(ScreenFit.aspect_for(original), Window.CONTENT_SCALE_ASPECT_KEEP, "the headless window is pillarboxed")
+	root.content_scale_aspect = Window.CONTENT_SCALE_ASPECT_EXPAND
+	_main()
+	assert_eq(root.content_scale_aspect, Window.CONTENT_SCALE_ASPECT_KEEP, "set when Main starts")
+	root.size = Vector2i(720, 1600)
+	await wait_process_frames(2)
+	assert_eq(root.content_scale_aspect, Window.CONTENT_SCALE_ASPECT_EXPAND, "a tall window expands as it resizes")
+	root.size = Vector2i(1600, 1000)
+	await wait_process_frames(2)
+	assert_eq(root.content_scale_aspect, Window.CONTENT_SCALE_ASPECT_KEEP, "a wide one is pillarboxed, as a foldable unfolds")
+	root.size = original
+	await wait_process_frames(2)
+	root.content_scale_aspect = Window.CONTENT_SCALE_ASPECT_EXPAND
 
 
 func test_back_on_the_menu_quits():
