@@ -26,6 +26,7 @@ if env["platform"] == "android":
 
 sf = env.Clone()                  # Stockfish + bridge share exactly these defines
 sf.Append(CPPDEFINES=["IS_64BIT", "USE_POPCNT", ("USE_NEON", 8)])
+sf.Append(CCFLAGS=["-iquote", SF])  # the bridge includes Stockfish's headers by name, from the tree being built
 sf.Append(CXXFLAGS=["-fconstexpr-steps=500000000"])
 sf.Append(CCFLAGS=["-O3", "-funroll-loops"])
 if env["platform"] == "macos":

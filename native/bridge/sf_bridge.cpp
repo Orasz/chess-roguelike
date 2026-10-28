@@ -17,12 +17,12 @@
 #endif
 
 // Same includes and init sequence as Stockfish's src/main.cpp.
-#include "../thirdparty/Stockfish/src/attacks.h"
-#include "../thirdparty/Stockfish/src/misc.h"
-#include "../thirdparty/Stockfish/src/movegen.h"
-#include "../thirdparty/Stockfish/src/position.h"
-#include "../thirdparty/Stockfish/src/tune.h"
-#include "../thirdparty/Stockfish/src/uci.h"
+#include "attacks.h"
+#include "misc.h"
+#include "movegen.h"
+#include "position.h"
+#include "tune.h"
+#include "uci.h"
 
 namespace {
 
