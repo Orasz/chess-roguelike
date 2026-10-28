@@ -10,13 +10,15 @@ const THEORY_DAMAGE := 5
 const STRONG_FAIL_DAMAGE := 15
 
 ## Damage curve: how a move's loss of win chance, in points, becomes HP lost.
-const DAMAGE_DEADZONE_WP := 3.0
+const DAMAGE_DEADZONE_WP := 5.0
 const DAMAGE_PER_WP := 0.5
 const MAX_MOVE_DAMAGE := 30
 
-## Thresholds in centipawns, for the enemy bar and for mate.
-const DECISIVE_CP := 800
-const MIN_BAR_RANGE_CP := 200
+## Thresholds in centipawns, for the enemy bar and for mate. A strong enemy is beaten at its
+## battle's opening evaluation plus `DECISIVE_GAIN_CP`, and never below `DECISIVE_MIN_CP`. The gain
+## is tuned with the game's own engine by `make strong-sim` (docs/research/2026-10-28-strong-tuning.md).
+const DECISIVE_GAIN_CP := 150
+const DECISIVE_MIN_CP := 500
 const MATE_CP := 10000
 
 ## Strong enemy: the move limit, the search time, and the lines it chooses among.

@@ -109,6 +109,15 @@ puzzles: $(PUZZLE_DB) $(SF_OUT)/stockfish
 	&& mv $(PUZZLES_FILE).tmp $(PUZZLES_FILE); \
 	status=$$?; rm -f $(PUZZLES_FILE).tmp; exit $$status
 
+# Plays every strong position against the game's own engine, with a player who follows the hint, and
+# prints how many it wins and how fast: the measure that tunes the strong enemy's win condition (see
+# docs/research/2026-10-28-strong-tuning.md). It takes about 20 minutes. RATING sets the enemy's Elo.
+RATING ?= 1200
+
+strong-sim: native-macos import
+	mkdir -p build
+	$(GODOT) --headless --path game -s res://tools/strong_sim.gd -- --rating $(RATING) --out ../build/strong-sim-$(RATING).json
+
 # The patched tree must reproduce the node count of the patch's own commit (2793281 for sf_19 plus the
 # light-net patch), so a rebase onto a new Stockfish release is caught here. Stockfish prints the
 # `bench` summary on stderr.
@@ -119,4 +128,4 @@ check-engine: stockfish-cli
 	if [ "$$nodes" = "$(BENCH_NODES)" ]; then echo "bench: $$nodes nodes, as expected"; \
 	else echo "bench: $${nodes:-no node count} nodes, expected $(BENCH_NODES)"; exit 1; fi
 
-.PHONY: net stockfish-tree stockfish-cli check-engine native-macos native-android apk install logcat import test test-tools puzzles
+.PHONY: net stockfish-tree stockfish-cli check-engine native-macos native-android apk install logcat import test test-tools puzzles strong-sim

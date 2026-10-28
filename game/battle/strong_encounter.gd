@@ -3,8 +3,9 @@ extends Encounter
 ## A game already under way, which the player must convert within `move_limit` moves. It starts
 ## from a puzzle record, after the enemy's first move. The enemy's bar is the player's advantage:
 ## it starts full at the opening evaluation and empties as the advantage grows, and a decisive
-## advantage or a mate wins. Each of the player's moves costs the win chance it throws away, as HP,
-## and a costly one is explained. When the moves run out, the enemy escapes.
+## advantage (a fixed gain over the start, see `HpModel.decisive_cp()`) or a mate wins. Each of
+## the player's moves costs the win chance it throws away, as HP, and a costly one is explained.
+## When the moves run out, the enemy escapes.
 ##
 ## One search per enemy turn both charges the player's last move and gives the enemy's answer. Its
 ## result is applied without a pause, up to the commit, so no save holds the damage without the
@@ -139,7 +140,7 @@ func _apply_search(lines: Array) -> void:
 	if damage >= Tuning.EXPLAIN_MIN_DAMAGE:
 		_explain(best)
 	enemy_bar.emit(HpModel.enemy_fraction(cp_after, _cp_start))
-	if HpModel.is_decisive(cp_after):
+	if HpModel.is_decisive(cp_after, _cp_start):
 		_finish(RunState.Outcome.WON)
 	elif _player_moves >= move_limit:
 		run.take_damage(Tuning.STRONG_FAIL_DAMAGE)
@@ -205,7 +206,7 @@ func _evaluate_opening() -> bool:
 	_cp_now = cp
 	_hint = best.pv[0]
 	_commit()
-	enemy_bar.emit(1.0)
+	enemy_bar.emit(_bar_fraction())
 	return true
 
 

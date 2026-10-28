@@ -31,15 +31,20 @@ static func player_damage(cp_before: int, cp_after: int) -> int:
 	return mini(roundi(loss * Tuning.DAMAGE_PER_WP), Tuning.MAX_MOVE_DAMAGE)
 
 
-## How full the enemy's bar is at `cp`, from 0 to 1. The bar starts full at the
-## battle's opening evaluation `cp_start`, and empties linearly to the decisive
-## threshold. The start is capped so that at least `Tuning.MIN_BAR_RANGE_CP` remains.
+## The evaluation that beats a strong enemy whose battle opened at `cp_start`: a fixed gain over
+## the start, and never less than `Tuning.DECISIVE_MIN_CP`.
+static func decisive_cp(cp_start: int) -> int:
+	return maxi(cp_start + Tuning.DECISIVE_GAIN_CP, Tuning.DECISIVE_MIN_CP)
+
+
+## How full the enemy's bar is at `cp`, from 0 to 1. The bar is full at the battle's opening
+## evaluation `cp_start`, and empties linearly to `decisive_cp(cp_start)`.
 static func enemy_fraction(cp: int, cp_start: int) -> float:
-	var bar_start := mini(cp_start, Tuning.DECISIVE_CP - Tuning.MIN_BAR_RANGE_CP)
-	var remaining := float(Tuning.DECISIVE_CP - cp)
-	return clampf(remaining / float(Tuning.DECISIVE_CP - bar_start), 0.0, 1.0)
+	var target := decisive_cp(cp_start)
+	return clampf(float(target - cp) / float(target - cp_start), 0.0, 1.0)
 
 
-## True when `cp` reaches the decisive threshold, which wins the battle.
-static func is_decisive(cp: int) -> bool:
-	return cp >= Tuning.DECISIVE_CP
+## True when `cp` reaches `decisive_cp(cp_start)`, which wins the battle. A mate for the player,
+## `Tuning.MATE_CP`, always does.
+static func is_decisive(cp: int, cp_start: int) -> bool:
+	return cp >= mini(decisive_cp(cp_start), Tuning.MATE_CP)

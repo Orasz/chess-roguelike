@@ -50,7 +50,7 @@ func test_mistake_costs_hp_from_lost_win_chance():
 
 func test_good_move_lowers_the_enemy_bar_without_damage():
 	await _make(OPENING, [FakeEngine.line("g1f3", 300)])
-	fake.replies.append([FakeEngine.line("b8c6", -550)])
+	fake.replies.append([FakeEngine.line("b8c6", -400)])
 	enc.submit_move("g1f3"); await wait_for_signal(enc.input_enabled, 2)
 	assert_eq(run.hp, 100); assert_almost_eq(get_signal_parameters(enc, "enemy_bar")[0], 0.5, 0.001)
 
@@ -326,7 +326,7 @@ func test_a_battle_saved_before_the_opening_eval_evaluates_it_on_resume():
 func test_restore_on_the_player_turn_shows_the_bar_and_waits_for_the_player():
 	_create(OPENING, [])
 	enc.restore({"id": "g", "kind": "strong", "content": "s1", "moves": ["e7e5", "g1f3", "b8c6"], "cp_start": 300.0,
-		"cp_now": 550.0, "player_moves": 1.0, "hint": "", "outcome": -1.0})
+		"cp_now": 400.0, "player_moves": 1.0, "hint": "", "outcome": -1.0})
 	enc.begin()
 	assert_eq(get_signal_parameters(enc, "board_changed", 0), [_fen_after(OPENING, ["e7e5", "g1f3", "b8c6"]), "b8c6"])
 	assert_almost_eq(get_signal_parameters(enc, "enemy_bar")[0], 0.5, 0.001)
