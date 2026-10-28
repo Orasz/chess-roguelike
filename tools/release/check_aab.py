@@ -4,12 +4,13 @@
 
 It prints one PASS or FAIL line per condition and exits with 1 when any of them fails. The conditions:
 
-* bundletool's `dump config` asks for 16 KB page alignment (PAGE_ALIGNMENT_16K);
-* the Stockfish library for the release template is in the bundle;
+* bundletool's `dump config` has uncompressNativeLibraries enabled and aligned to PAGE_ALIGNMENT_16K: that
+  is what makes the installed APKs store the libraries uncompressed and 16 KB aligned (the entries inside the
+  bundle itself are deflated by design);
+* the Stockfish library for the release template is in the bundle, and no library of another ABI is;
 * every arm64-v8a library has only LOAD segments aligned to 2**14, read with the NDK's llvm-objdump;
-* every arm64-v8a library is stored in the zip, not deflated;
-* the manifest carries the Play application id and the preset's versionCode, targets SDK 36 and declares
-  no permission.
+* the manifest carries the Play application id and the preset's versionCode, has minSdkVersion 24 and
+  targetSdkVersion 36, and declares no permission.
 
 The application id and the versionCode come from the "Android Play" preset, so a version bump in
 game/export_presets.cfg is all the check needs. bundletool and llvm-objdump run through the small Tools
@@ -18,6 +19,7 @@ class, which the tests replace.
 
 import argparse
 import glob
+import json
 import os
 import re
 import subprocess
@@ -33,6 +35,8 @@ from . import preset
 REQUIRED_LIB = "libstockfish_gd.android.template_release.arm64.so"
 LIB_DIR = "base/lib/arm64-v8a/"
 TARGET_SDK = "36"
+MIN_SDK = "24"
+LIB_ROOT = "base/lib/"
 MIN_ALIGN_EXPONENT = 14  # 2**14 bytes is 16 KB
 ANDROID_NS = "{http://schemas.android.com/apk/res/android}"
 PRESET_FILE = Path(__file__).resolve().parents[2] / "game" / "export_presets.cfg"
@@ -95,26 +99,38 @@ def parse_load_alignments(objdump_output: str) -> list[int]:
     return [int(match.group(1)) for match in re.finditer(r"^\s*LOAD\b.*\balign 2\*\*(\d+)", objdump_output, re.M)]
 
 
-def check_config(config: str) -> Result:
-    name = "bundle config asks for 16 KB page alignment"
-    return Result(name, "PAGE_ALIGNMENT_16K" in config, "PAGE_ALIGNMENT_16K is not in `bundletool dump config`")
+def check_config(config: str) -> list[Result]:
+    """The two conditions on bundletool's `dump config` JSON, which may be wrapped in other output."""
+    names = ["bundle config uncompresses native libraries", "bundle config asks for 16 KB page alignment"]
+    try:
+        start, end = config.index("{"), config.rindex("}")
+        uncompress = json.loads(config[start : end + 1])["optimizations"]["uncompressNativeLibraries"]
+        enabled, alignment = uncompress.get("enabled"), uncompress.get("alignment")
+    except (ValueError, KeyError, TypeError, AttributeError) as error:
+        return [Result(name, False, f"optimizations.uncompressNativeLibraries is not readable ({error!r})") for name in names]
+    return [
+        Result(names[0], enabled is True, f"enabled is {enabled}"),
+        Result(names[1], alignment == "PAGE_ALIGNMENT_16K", f"alignment is {alignment}"),
+    ]
 
 
 def check_manifest(manifest_text: str, expected: Expected) -> list[Result]:
     names = [
         f"manifest application id is {expected.application_id}",
         f"manifest versionCode is {expected.version_code}",
+        f"manifest minSdkVersion is {MIN_SDK}",
         f"manifest targetSdkVersion is {TARGET_SDK}",
         "manifest declares no permission",
     ]
-    start = manifest_text.find("<manifest")
+    start, end = manifest_text.find("<manifest"), manifest_text.rfind("</manifest>")
     try:
-        if start < 0:
+        if start < 0 or end < start:
             raise ET.ParseError("no <manifest> element")
-        root = ET.fromstring(manifest_text[start:])
+        root = ET.fromstring(manifest_text[start : end + len("</manifest>")])
     except ET.ParseError as error:
         return [Result(name, False, f"the manifest cannot be read ({error})") for name in names]
     uses_sdk = root.find("uses-sdk")
+    minimum = uses_sdk.get(f"{ANDROID_NS}minSdkVersion") if uses_sdk is not None else None
     target = uses_sdk.get(f"{ANDROID_NS}targetSdkVersion") if uses_sdk is not None else None
     permissions = [child.get(f"{ANDROID_NS}name", "?") for child in root if child.tag.startswith("uses-permission")]
     package = root.get("package")
@@ -122,31 +138,31 @@ def check_manifest(manifest_text: str, expected: Expected) -> list[Result]:
     return [
         Result(names[0], package == expected.application_id, f"found {package}"),
         Result(names[1], code == expected.version_code, f"found {code}"),
-        Result(names[2], target == TARGET_SDK, f"found {target}"),
-        Result(names[3], not permissions, "found " + ", ".join(permissions)),
+        Result(names[2], minimum == MIN_SDK, f"found {minimum}"),
+        Result(names[3], target == TARGET_SDK, f"found {target}"),
+        Result(names[4], not permissions, "found " + ", ".join(permissions)),
     ]
 
 
 def check_libraries(aab: Path, tools) -> list[Result]:
-    """The required library is there, and every arm64-v8a library has 16 KB aligned LOAD segments."""
+    """The required library is there, no other ABI is, and every arm64-v8a library has 16 KB aligned LOAD segments."""
     with zipfile.ZipFile(aab) as bundle:
         members = [
             info for info in bundle.infolist() if info.filename.startswith(LIB_DIR) and info.filename.endswith(".so")
         ]
+        others = sorted(
+            {i.filename for i in bundle.infolist() if i.filename.startswith(LIB_ROOT) and not i.filename.startswith(LIB_DIR)}
+        )
         results = [
             Result(
                 f"{REQUIRED_LIB} is in the bundle",
                 any(info.filename == LIB_DIR + REQUIRED_LIB for info in members),
                 f"not found under {LIB_DIR}",
-            )
+            ),
+            Result("the bundle has no library of another ABI", not others, "found " + ", ".join(others)),
         ]
         if not members:
             return results + [Result("the bundle has arm64-v8a libraries", False, f"nothing under {LIB_DIR}")]
-        # A deflated library cannot be mapped straight from the APK, and the 16 KB zip alignment needs it stored.
-        compressed = [Path(info.filename).name for info in members if info.compress_type != zipfile.ZIP_STORED]
-        results.append(
-            Result("every arm64-v8a library is stored uncompressed", not compressed, "compressed: " + ", ".join(compressed))
-        )
         with tempfile.TemporaryDirectory(prefix="check-aab-") as directory:
             for info in members:
                 library = Path(info.filename).name
@@ -169,9 +185,9 @@ def check_libraries(aab: Path, tools) -> list[Result]:
 def check_bundle(aab: Path, expected: Expected, tools) -> list[Result]:
     results: list[Result] = []
     try:
-        results.append(check_config(tools.dump_config(aab)))
+        results += check_config(tools.dump_config(aab))
     except ToolError as error:
-        results.append(Result("bundle config asks for 16 KB page alignment", False, str(error)))
+        results.append(Result("bundle config can be dumped", False, str(error)))
     results += check_libraries(aab, tools)
     try:
         results += check_manifest(tools.dump_manifest(aab), expected)

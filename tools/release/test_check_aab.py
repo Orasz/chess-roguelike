@@ -1,9 +1,11 @@
 import contextlib
 import io
+import subprocess
 import tempfile
 import unittest
 import zipfile
 from pathlib import Path
+from unittest import mock
 
 from . import check_aab
 
@@ -11,49 +13,82 @@ GOOD_ALIGN = [14, 14, 14, 14]
 SO = check_aab.REQUIRED_LIB
 EXPECTED = check_aab.Expected(application_id="io.example.play", version_code="3")
 
-CONFIG_16K = '{"optimizations": {"uncompressNativeLibraries": {"enabled": true, "pageAlignment": "PAGE_ALIGNMENT_16K"}}}'
-CONFIG_4K = '{"optimizations": {"uncompressNativeLibraries": {"enabled": true, "pageAlignment": "PAGE_ALIGNMENT_4K"}}}'
+# The output of `bundletool dump config` on our own bundle (bundletool 1.16.0), the compression globs cut short.
+REAL_CONFIG = """{
+  "bundletool": {
+    "version": "1.16.0"
+  },
+  "optimizations": {
+    "splitsConfig": {
+    },
+    "uncompressNativeLibraries": {
+      "enabled": true,
+      "alignment": "PAGE_ALIGNMENT_16K"
+    },
+    "storeArchive": {
+      "enabled": true
+    }
+  },
+  "compression": {
+    "uncompressedGlob": ["**.3[gG]2", "**.3[gG][pP]", "**.[aA][aA][cC]"]
+  }
+}
+"""
+CONFIG_16K = REAL_CONFIG
+CONFIG_4K = REAL_CONFIG.replace("PAGE_ALIGNMENT_16K", "PAGE_ALIGNMENT_4K")
+CONFIG_COMPRESSED = REAL_CONFIG.replace('"enabled": true,\n      "alignment"', '"enabled": false,\n      "alignment"')
+LIBS_COMPRESSED_NAME = "bundle config uncompresses native libraries"
+ALIGNMENT_NAME = "bundle config asks for 16 KB page alignment"
 
 
-def manifest(package="io.example.play", code="3", target="36", extra=""):
+def manifest(package="io.example.play", code="3", target="36", extra="", minimum="24"):
     return f"""<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     android:versionCode="{code}" android:versionName="0.1.0" package="{package}">
-  <uses-sdk android:minSdkVersion="24" android:targetSdkVersion="{target}" />
+  <uses-sdk android:minSdkVersion="{minimum}" android:targetSdkVersion="{target}" />
   <uses-feature android:glEsVersion="0x00030000" android:required="true" />
   {extra}
   <application android:allowBackup="false" />
 </manifest>"""
 
 
-def make_aab(directory, libs=(SO, "libc++_shared.so"), deflated=()):
-    """A zip shaped like a bundle. Its libraries are stored, except the ones named in `deflated`."""
+def make_aab(directory, libs=(SO, "libc++_shared.so"), other_abis=()):
+    """A zip shaped like a bundle: arm64-v8a libraries, plus the "abi/name" libraries of `other_abis`."""
     path = Path(directory) / "fake.aab"
-    with zipfile.ZipFile(path, "w") as bundle:
-        bundle.writestr("BundleConfig.pb", b"", compress_type=zipfile.ZIP_DEFLATED)
-        bundle.writestr("base/manifest/AndroidManifest.xml", b"", compress_type=zipfile.ZIP_DEFLATED)
+    with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as bundle:
+        bundle.writestr("BundleConfig.pb", b"")
+        bundle.writestr("base/manifest/AndroidManifest.xml", b"")
         for lib in libs:
-            method = zipfile.ZIP_DEFLATED if lib in deflated else zipfile.ZIP_STORED
-            bundle.writestr(f"base/lib/arm64-v8a/{lib}", b"not an elf" * 100, compress_type=method)
+            bundle.writestr(f"base/lib/arm64-v8a/{lib}", b"not an elf")
+        for abi_lib in other_abis:
+            bundle.writestr(f"base/lib/{abi_lib}", b"not an elf")
     return path
 
 
 class FakeTools:
     """Stands in for bundletool and llvm-objdump: it answers with canned text and canned alignments."""
 
-    def __init__(self, config=CONFIG_16K, manifest_xml=None, alignments=None):
+    def __init__(self, config=CONFIG_16K, manifest_xml=None, alignments=None, raises=()):
         self.config = config
+        self.raises = raises
         self.manifest_xml = manifest_xml if manifest_xml is not None else manifest()
         self.alignments = alignments or {}
         self.inspected = []
 
+    def _maybe_raise(self, what):
+        if what in self.raises:
+            raise check_aab.ToolError(f"{what} blew up")
+
     def dump_config(self, aab):
+        self._maybe_raise("dump_config")
         return self.config
 
     def dump_manifest(self, aab):
+        self._maybe_raise("dump_manifest")
         return self.manifest_xml
 
     def load_alignments(self, so_path):
+        self._maybe_raise("load_alignments")
         self.inspected.append(Path(so_path).name)
         return self.alignments.get(Path(so_path).name, GOOD_ALIGN)
 
@@ -63,9 +98,9 @@ def verdicts(results):
 
 
 class CheckBundleTest(unittest.TestCase):
-    def run_checks(self, tools, libs=(SO, "libc++_shared.so"), deflated=()):
+    def run_checks(self, tools, libs=(SO, "libc++_shared.so"), other_abis=()):
         with tempfile.TemporaryDirectory() as directory:
-            aab = make_aab(directory, libs, deflated)
+            aab = make_aab(directory, libs, other_abis)
             return check_aab.check_bundle(aab, EXPECTED, tools)
 
     def test_a_good_bundle_passes_every_check(self):
@@ -74,9 +109,34 @@ class CheckBundleTest(unittest.TestCase):
         self.assertTrue(all(result.passed for result in results), [r.line() for r in results])
         self.assertEqual(sorted(tools.inspected), sorted([SO, "libc++_shared.so"]))
 
-    def test_a_4k_page_alignment_in_the_config_fails(self):
-        results = self.run_checks(FakeTools(config=CONFIG_4K))
-        self.assertFalse(verdicts(results)["bundle config asks for 16 KB page alignment"])
+    def test_a_4k_page_alignment_in_the_config_fails_only_the_alignment_line(self):
+        verdict = verdicts(self.run_checks(FakeTools(config=CONFIG_4K)))
+        self.assertFalse(verdict[ALIGNMENT_NAME])
+        self.assertTrue(verdict[LIBS_COMPRESSED_NAME])
+
+    def test_a_config_that_keeps_native_libraries_compressed_fails_only_that_line(self):
+        verdict = verdicts(self.run_checks(FakeTools(config=CONFIG_COMPRESSED)))
+        self.assertFalse(verdict[LIBS_COMPRESSED_NAME])
+        self.assertTrue(verdict[ALIGNMENT_NAME])
+
+    def test_the_alignment_must_be_in_the_uncompress_block_not_just_anywhere_in_the_text(self):
+        misplaced = '{"optimizations": {"uncompressNativeLibraries": {"enabled": true}}, "note": "PAGE_ALIGNMENT_16K"}'
+        verdict = verdicts(self.run_checks(FakeTools(config=misplaced)))
+        self.assertFalse(verdict[ALIGNMENT_NAME])
+
+    def test_noise_around_the_config_json_is_ignored(self):
+        results = self.run_checks(FakeTools(config="INFO: starting\n" + REAL_CONFIG + "\nDone."))
+        self.assertTrue(all(result.passed for result in results), [r.line() for r in results])
+
+    def test_a_config_that_is_not_json_fails_both_config_lines(self):
+        verdict = verdicts(self.run_checks(FakeTools(config="no json here")))
+        self.assertFalse(verdict[ALIGNMENT_NAME])
+        self.assertFalse(verdict[LIBS_COMPRESSED_NAME])
+
+    def test_a_config_without_the_uncompress_block_fails_both_config_lines(self):
+        verdict = verdicts(self.run_checks(FakeTools(config='{"optimizations": {}}')))
+        self.assertFalse(verdict[ALIGNMENT_NAME])
+        self.assertFalse(verdict[LIBS_COMPRESSED_NAME])
 
     def test_a_library_with_a_4k_load_segment_fails_and_names_the_library(self):
         tools = FakeTools(alignments={"libc++_shared.so": [14, 12]})
@@ -90,14 +150,11 @@ class CheckBundleTest(unittest.TestCase):
         results = self.run_checks(tools)
         self.assertTrue(any(not result.passed and SO in result.name for result in results))
 
-    def test_a_compressed_library_fails_the_stored_check_and_only_that_one(self):
-        results = self.run_checks(FakeTools(), deflated=("libc++_shared.so",))
+    def test_a_library_of_another_abi_fails_and_is_named(self):
+        results = self.run_checks(FakeTools(), other_abis=("armeabi-v7a/libgodot_android.so",))
         failed = [result for result in results if not result.passed]
-        self.assertEqual([result.name for result in failed], ["every arm64-v8a library is stored uncompressed"])
-        self.assertIn("libc++_shared.so", failed[0].detail)
-
-    def test_stored_libraries_pass_the_stored_check(self):
-        self.assertTrue(verdicts(self.run_checks(FakeTools()))["every arm64-v8a library is stored uncompressed"])
+        self.assertEqual([result.name for result in failed], ["the bundle has no library of another ABI"])
+        self.assertIn("armeabi-v7a", failed[0].detail)
 
     def test_a_missing_stockfish_library_fails(self):
         results = self.run_checks(FakeTools(), libs=("libc++_shared.so",))
@@ -114,6 +171,10 @@ class CheckBundleTest(unittest.TestCase):
     def test_the_manifest_version_code_must_equal_the_preset(self):
         results = self.run_checks(FakeTools(manifest_xml=manifest(code="2")))
         self.assertFalse(verdicts(results)["manifest versionCode is 3"])
+
+    def test_the_manifest_must_have_min_sdk_24(self):
+        results = self.run_checks(FakeTools(manifest_xml=manifest(minimum="21")))
+        self.assertFalse(verdicts(results)["manifest minSdkVersion is 24"])
 
     def test_the_manifest_must_target_sdk_36(self):
         results = self.run_checks(FakeTools(manifest_xml=manifest(target="35")))
@@ -135,6 +196,25 @@ class CheckBundleTest(unittest.TestCase):
         manifest_checks = [result for result in results if result.name.startswith("manifest")]
         self.assertTrue(manifest_checks)
         self.assertTrue(all(not result.passed for result in manifest_checks))
+
+    def test_bundletool_output_after_the_xml_is_ignored_too(self):
+        results = self.run_checks(FakeTools(manifest_xml=manifest() + "\nINFO: done <not xml>\n"))
+        self.assertTrue(all(result.passed for result in results), [r.line() for r in results])
+
+    def test_a_failing_config_dump_is_one_fail_line_and_the_other_checks_still_run(self):
+        results = self.run_checks(FakeTools(raises=("dump_config",)))
+        failed = [result.name for result in results if not result.passed]
+        self.assertEqual(failed, ["bundle config can be dumped"])
+
+    def test_a_failing_manifest_dump_is_one_fail_line_and_the_other_checks_still_run(self):
+        results = self.run_checks(FakeTools(raises=("dump_manifest",)))
+        failed = [result.name for result in results if not result.passed]
+        self.assertEqual(failed, ["manifest can be dumped"])
+
+    def test_a_failing_objdump_fails_each_library_and_only_those(self):
+        results = self.run_checks(FakeTools(raises=("load_alignments",)))
+        failed = [result.name for result in results if not result.passed]
+        self.assertEqual(sorted(failed), sorted(f"{lib} has 16 KB LOAD segments" for lib in (SO, "libc++_shared.so")))
 
     def test_bundletool_output_before_the_xml_is_ignored(self):
         results = self.run_checks(FakeTools(manifest_xml="INFO: noise\n" + manifest()))
@@ -186,6 +266,106 @@ class MainTest(unittest.TestCase):
                 code = check_aab.run(path, EXPECTED, FakeTools())
         self.assertNotEqual(code, 0)
         self.assertTrue(out.getvalue().startswith("FAIL "))
+
+# The manifest `bundletool dump manifest` printed for our own bundle, cut down to the elements that matter.
+REAL_MANIFEST = """<manifest xmlns:android="http://schemas.android.com/apk/res/android" android:compileSdkVersion="36" android:versionCode="1" android:versionName="0.1.0" package="io.github.orasz.chessroguelike" platformBuildVersionCode="36">
+
+  <uses-sdk android:minSdkVersion="24" android:targetSdkVersion="36"/>
+
+  <uses-feature android:glEsVersion="0x00030000" android:required="true"/>
+
+  <application android:allowBackup="false" android:extractNativeLibs="false">
+    <activity android:name="com.godot.game.GodotApp" android:exported="false">
+        </activity>
+  </application>
+</manifest>
+"""
+
+
+class RealOutputTest(unittest.TestCase):
+    def test_the_manifest_bundletool_printed_for_our_bundle_passes(self):
+        expected = check_aab.Expected("io.github.orasz.chessroguelike", "1")
+        results = check_aab.check_manifest(REAL_MANIFEST, expected)
+        self.assertEqual(len(results), 5)
+        self.assertTrue(all(result.passed for result in results), [r.line() for r in results])
+
+    def test_the_config_bundletool_printed_for_our_bundle_passes(self):
+        results = check_aab.check_config(REAL_CONFIG)
+        self.assertEqual(len(results), 2)
+        self.assertTrue(all(result.passed for result in results))
+
+
+class ToolsRunTest(unittest.TestCase):
+    """Tools._run turns a failing subprocess into a ToolError that carries the tool's own message."""
+
+    def tools(self):
+        return check_aab.Tools("bundletool.jar", "/jdk/bin/java", "/ndk/llvm-objdump")
+
+    def test_a_nonzero_exit_becomes_a_tool_error_with_the_stderr(self):
+        failure = subprocess.CalledProcessError(1, ["java"], output="", stderr="Invalid or corrupt jarfile")
+        with mock.patch.object(check_aab.subprocess, "run", side_effect=failure):
+            with self.assertRaisesRegex(check_aab.ToolError, "Invalid or corrupt jarfile"):
+                self.tools().dump_config(Path("x.aab"))
+
+    def test_a_program_that_cannot_start_becomes_a_tool_error(self):
+        with mock.patch.object(check_aab.subprocess, "run", side_effect=FileNotFoundError("no such java")):
+            with self.assertRaisesRegex(check_aab.ToolError, "java failed: no such java"):
+                self.tools().dump_manifest(Path("x.aab"))
+
+    def test_the_commands_are_the_ones_the_makefile_documents(self):
+        done = subprocess.CompletedProcess([], 0, stdout="out")
+        with mock.patch.object(check_aab.subprocess, "run", return_value=done) as run:
+            self.tools().dump_config(Path("x.aab"))
+            self.tools().load_alignments(Path("a.so"))
+        self.assertEqual(run.call_args_list[0].args[0], ["/jdk/bin/java", "-jar", "bundletool.jar", "dump", "config", "--bundle=x.aab"])
+        self.assertEqual(run.call_args_list[1].args[0], ["/ndk/llvm-objdump", "-p", "a.so"])
+
+
+class MainFunctionTest(unittest.TestCase):
+    PRESETS = (
+        '[preset.0]\n\nname="Android Play"\n\n[preset.0.options]\n\n'
+        'package/unique_name="io.example.play"\nversion/code=7\nversion/name="2.0.0"\n'
+    )
+
+    def setUp(self):
+        self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
+        self.root = Path(self.directory.name)
+        self.aab = make_aab(self.root)
+        self.jar = self.root / "bundletool.jar"
+        self.jar.write_bytes(b"")
+        self.presets = self.root / "export_presets.cfg"
+        self.presets.write_text(self.PRESETS, encoding="utf-8")
+
+    def arguments(self, **overrides):
+        values = {"aab": str(self.aab), "--bundletool": str(self.jar), "--presets": str(self.presets)}
+        values.update(overrides)
+        return [values.pop("aab")] + [item for pair in values.items() for item in pair] + ["--objdump", "llvm-objdump"]
+
+    def test_the_expected_id_and_version_come_from_the_play_preset(self):
+        with mock.patch.object(check_aab, "run", return_value=0) as run:
+            self.assertEqual(check_aab.main(self.arguments()), 0)
+        aab, expected, tools = run.call_args.args
+        self.assertEqual(aab, self.aab)
+        self.assertEqual(expected, check_aab.Expected("io.example.play", "7"))
+        self.assertEqual((tools.bundletool, tools.objdump), (str(self.jar), "llvm-objdump"))
+
+    def test_the_exit_code_of_run_is_the_exit_code_of_main(self):
+        with mock.patch.object(check_aab, "run", return_value=1):
+            self.assertEqual(check_aab.main(self.arguments()), 1)
+
+    def test_a_missing_bundle_stops_with_a_message(self):
+        with self.assertRaisesRegex(SystemExit, "does not exist"):
+            check_aab.main(self.arguments(aab=str(self.root / "nope.aab")))
+
+    def test_a_missing_bundletool_stops_with_a_message(self):
+        with self.assertRaisesRegex(SystemExit, "bundletool .*does not exist"):
+            check_aab.main(self.arguments(**{"--bundletool": str(self.root / "nope.jar")}))
+
+    def test_a_missing_bundle_argument_is_an_argparse_error(self):
+        with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit) as caught:
+            check_aab.main([])
+        self.assertEqual(caught.exception.code, 2)
 
 
 if __name__ == "__main__":

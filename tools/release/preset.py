@@ -3,7 +3,9 @@
 The Makefile uses it to name the bundle after the preset's version, and check_aab.py to know what the
 bundle must contain, so the version and the application id are written in one place only.
 
-    python3 -m tools.release.preset game/export_presets.cfg "Android Play" version/code
+    python3 -m tools.release.preset game/export_presets.cfg "Android Play" version/name version/code
+
+It prints the value of each key given, one per line.
 """
 
 import configparser
@@ -28,20 +30,22 @@ def read_options(cfg_text: str, preset_name: str) -> dict[str, str]:
 
 
 def main(argv: list[str]) -> int:
-    if len(argv) != 4:
-        print("usage: preset.py <export_presets.cfg> <preset name> <option key>", file=sys.stderr)
+    if len(argv) < 4:
+        print("usage: preset.py <export_presets.cfg> <preset name> <option key>...", file=sys.stderr)
         return 2
-    path, name, key = argv[1:]
+    path, name, keys = argv[1], argv[2], argv[3:]
     with open(path, encoding="utf-8") as handle:
         try:
             options = read_options(handle.read(), name)
         except KeyError as error:
             print(error.args[0], file=sys.stderr)
             return 1
-    if key not in options:
-        print(f'preset "{name}" has no option {key}', file=sys.stderr)
+    missing = [key for key in keys if key not in options]
+    if missing:
+        print(f'preset "{name}" has no option {", ".join(missing)}', file=sys.stderr)
         return 1
-    print(options[key])
+    for key in keys:
+        print(options[key])
     return 0
 
 

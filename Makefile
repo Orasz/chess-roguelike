@@ -72,13 +72,16 @@ logcat:
 # reads, prints or stores the password. The bundle's name follows the "Android Play" preset's version, so
 # a version bump is made in game/export_presets.cfg and nowhere else.
 PLAY_PRESET := Android Play
-preset_option = $(shell python3 -m tools.release.preset game/export_presets.cfg "$(PLAY_PRESET)" $(1))
-AAB_OUT = build/chess-roguelike-$(call preset_option,version/name)-$(call preset_option,version/code).aab
+# The preset is read once, when a rule first needs it: "<version/name> <version/code>".
+PLAY_VERSION = $(eval PLAY_VERSION := $$(shell python3 -m tools.release.preset game/export_presets.cfg "$(PLAY_PRESET)" version/name version/code))$(PLAY_VERSION)
+AAB_OUT = $(if $(filter 2,$(words $(PLAY_VERSION))),build/chess-roguelike-$(word 1,$(PLAY_VERSION))-$(word 2,$(PLAY_VERSION)).aab,$(error cannot read version/name and version/code of the "$(PLAY_PRESET)" preset in game/export_presets.cfg))
 AAB ?= $(AAB_OUT)
 APKS := build/chess-roguelike-play.apks
 BUNDLETOOL ?= build/tools/bundletool.jar
 BUNDLETOOL_RUN = "$(JAVA_HOME)/bin/java" -jar "$(BUNDLETOOL)"
-TEMPLATE_VERSION_FILE := game/android/.build_version
+# Written by android-template once the template is complete, and holding the Godot version it was made for.
+# Godot's own game/android/.build_version cannot serve: Godot writes it before it unzips the template.
+TEMPLATE_SENTINEL := game/android/.installed-by-make
 
 require-release-keystore:
 	@missing=""; \
@@ -97,12 +100,15 @@ require-bundletool:
 # Godot's Gradle build template, unzipped into game/android/ (ignored by git: it weighs about 216 MB).
 # The only way to install it from the command line is the --install-android-build-template flag, which
 # works together with an export. The export here must fail on purpose, before it builds anything: the
-# release keystore variable points at a file that does not exist. The template is reinstalled when its
-# version file does not name the Godot in use, because Godot refuses to build with a stale one.
-android-template:
+# release keystore variable points at a file that does not exist, so its failure says nothing about the
+# template. What says it is complete is the files the unzip writes last. Only then does the recipe write
+# its sentinel, which holds the Godot version: a template made for another Godot is reinstalled, because
+# Godot refuses to build with a stale one, and an interrupted install is redone.
+android-template: import
 	@set -e; \
 	want=$$($(GODOT) --version | cut -d. -f1-4); \
-	if [ -f $(TEMPLATE_VERSION_FILE) ] && [ "$$(cat $(TEMPLATE_VERSION_FILE))" = "$$want" ]; then exit 0; fi; \
+	[ -n "$$want" ] || { echo "cannot read the Godot version"; exit 1; }; \
+	if [ "$$(cat $(TEMPLATE_SENTINEL) 2>/dev/null)" = "$$want" ]; then exit 0; fi; \
 	echo "Installing the Android build template $$want into game/android"; \
 	rm -rf game/android; \
 	mkdir -p build; \
@@ -110,7 +116,14 @@ android-template:
 		GODOT_ANDROID_KEYSTORE_RELEASE_PATH=/nonexistent/no-keystore.jks \
 		$(GODOT) --headless --path game --install-android-build-template \
 		--export-release "$(PLAY_PRESET)" ../build/.template-probe.aab 2>&1) || true; \
-	[ -f $(TEMPLATE_VERSION_FILE) ] || { echo "Godot did not install the template:"; echo "$$out"; exit 1; }
+	rm -f build/.template-probe.aab; \
+	if [ "$$(cat game/android/.build_version 2>/dev/null)" = "$$want" ] \
+		&& [ -f game/android/build/build.gradle ] && [ -x game/android/build/gradlew ] \
+		&& [ -f game/android/build/libs/release/godot-lib.template_release.aar ]; then \
+		echo "$$want" > $(TEMPLATE_SENTINEL); \
+	else \
+		echo "Godot did not install the template completely:"; echo "$$out"; exit 1; \
+	fi
 
 aab: require-release-keystore native-android-release import android-template
 	mkdir -p build
