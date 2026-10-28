@@ -346,6 +346,77 @@ class MainTest(unittest.TestCase):
         self.assertEqual(ids(result["strong"]), ["in_reach"])
         self.assertEqual(result["strong"][0]["eval"], 200)
 
+    def _run_with_engine(self, engine_class):
+        stdin = io.StringIO(
+            "\n".join(
+                [
+                    HEADER,
+                    row(id="a", themes="advantage long", moves="e7e5 g1f3"),
+                    row(id="b", themes="advantage long", moves="d7d5 g1f3"),
+                ]
+            )
+            + "\n"
+        )
+        stdout, stderr = io.StringIO(), io.StringIO()
+        argv = ["--opening", "Italian_Game", "--side", "white", "--engine", "/fake/stockfish"]
+        with mock.patch("sys.stdin", stdin), mock.patch("sys.stdout", stdout), mock.patch(
+            "sys.stderr", stderr
+        ), mock.patch.object(uci, "Engine", engine_class):
+            status = build_subset.main(argv)
+        return status, stdout.getvalue(), stderr.getvalue()
+
+    def test_a_dead_engine_stops_the_run_with_a_message_and_no_output(self):
+        for failure in (EOFError("the engine closed its output"), BrokenPipeError("broken pipe")):
+
+            class DyingEngine:
+                def __init__(self, path):
+                    pass
+
+                def __enter__(self):
+                    return self
+
+                def __exit__(self, *exc):
+                    pass
+
+                def search(self, fen, moves, depth=None, movetime_ms=None):
+                    raise failure
+
+            status, out, err = self._run_with_engine(DyingEngine)
+            self.assertEqual(status, 1)
+            self.assertEqual(out, "")
+            self.assertIn("/fake/stockfish", err)
+            self.assertIn("failed", err)
+
+    def test_an_engine_that_cannot_start_stops_the_run(self):
+        class BrokenEngine:
+            def __init__(self, path):
+                raise FileNotFoundError(path)
+
+        status, out, err = self._run_with_engine(BrokenEngine)
+        self.assertEqual(status, 1)
+        self.assertEqual(out, "")
+        self.assertIn("failed", err)
+
+    def test_a_row_the_engine_refuses_is_skipped_not_fatal(self):
+        class PickyEngine:
+            def __init__(self, path):
+                pass
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *exc):
+                pass
+
+            def search(self, fen, moves, depth=None, movetime_ms=None):
+                if moves == ["e7e5"]:
+                    raise ValueError("not a move")
+                return uci.Result(best="g1f3", cp=200, mate=None)
+
+        status, out, _ = self._run_with_engine(PickyEngine)
+        self.assertEqual(status, 0)
+        self.assertEqual(ids(json.loads(out)["strong"]), ["b"])
+
 
 if __name__ == "__main__":
     unittest.main()

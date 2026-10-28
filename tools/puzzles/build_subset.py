@@ -233,9 +233,11 @@ def _engine_evaluator(engine, depth):
 
     def evaluate(fen, first_move):
         # After the first move the solver is the side to move, so its score is the engine's.
+        # Only a row the engine refuses (an illegal FEN or move) is skipped: a dead engine
+        # (EOFError, OSError) must stop the run, or the pool would silently come out short.
         try:
             return engine.search(fen, [first_move], depth=depth).cp
-        except (EOFError, OSError, ValueError):
+        except ValueError:
             return None
 
     return evaluate
@@ -252,8 +254,12 @@ def main(argv=None):
         sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         from engine import uci
 
-        with uci.Engine(engine_path) as engine:
-            subset = build(sys.stdin, evaluate=_engine_evaluator(engine, depth), **options)
+        try:
+            with uci.Engine(engine_path) as engine:
+                subset = build(sys.stdin, evaluate=_engine_evaluator(engine, depth), **options)
+        except (EOFError, OSError) as error:
+            sys.stderr.write("build_subset: the engine %s failed: %s\n" % (engine_path, error or type(error).__name__))
+            return 1
     sys.stdout.write(json.dumps(subset, indent=1, sort_keys=True) + "\n")
     return 0
 
