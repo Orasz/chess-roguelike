@@ -1,0 +1,31 @@
+Chess Roguelike è un roguelike in cui ogni combattimento è una posizione di scacchi.
+
+Cammini su una mappa vista dall'alto. Quando tocchi un nemico si apre uno scontro su una scacchiera, e lo giochi mossa dopo mossa. Gli scacchi sono quelli veri: Stockfish, il motore scacchistico open source, gira direttamente sul tuo telefono. Muove i nemici forti e giudica i tuoi errori.
+
+QUESTA È UNA BETA
+La beta ha una sola zona e una sola apertura, la Partita Italiana, che giochi con il Bianco. È piccola di proposito: serve a mettere alla prova l'idea e gli scacchi. Segnalazioni e idee sono benvenute su GitHub.
+
+TRE TIPI DI NEMICO
+- Problema: un problema tattico preso dal database dei problemi di Lichess. Trova la mossa vincente, oppure una qualsiasi mossa che dia scacco matto. Una mossa sbagliata ti costa PV, e il gioco te la spiega con una freccia e una frase.
+- Apertura: uno scontro sulla teoria della Partita Italiana. Devi giocare le mosse da manuale, e ognuna arriva con l'idea che c'è dietro. Una mossa fuori teoria viene ritirata e spiegata.
+- Nemico forte: parti con un vantaggio netto e devi trasformarlo in vittoria entro un numero limitato di mosse. Gli errori ti costano PV in proporzione al vantaggio che butti via, e la barra del nemico ti dice a che punto sei. Se finiscono le mosse, il nemico ti sfugge.
+
+LA TUA AVVENTURA
+Hai dei PV per tutta l'avventura e una pozione per curarti. Il gioco salva da solo e riparte da dove eri rimasto, anche nel mezzo di uno scontro. All'inizio di ogni avventura scegli il livello: Principiante, Club o Forte.
+
+GRATUITO E APERTO
+- Gratuito, senza pubblicità e senza acquisti.
+- Nessun account, e funziona offline.
+- Nessun dato raccolto: l'app non ha accesso a internet e non chiede nessun permesso.
+- Open source con licenza GPLv3: https://github.com/Orasz/chess-roguelike
+- Lingue: inglese e italiano.
+- Per giocatori dai 18 anni in su durante la beta.
+
+CREDITI
+- Motore scacchistico Stockfish (GPLv3), che gira sul telefono.
+- Problemi dal database dei problemi di Lichess (CC0).
+- Grafica dal pacchetto Ninja Adventure di pixel-boy (CC0) e da Pixel Chess Pieces di SpicyGame (CC0).
+- Godot Engine (MIT).
+
+Codice sorgente e segnalazioni: https://github.com/Orasz/chess-roguelike
+Informativa sulla privacy: https://github.com/Orasz/chess-roguelike/blob/main/PRIVACY.md

@@ -1,0 +1,1 @@
+A roguelike where every battle is a chess position. Offline and open source.

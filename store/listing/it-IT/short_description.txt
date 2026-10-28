@@ -1,0 +1,1 @@
+Un roguelike dove ogni scontro è una posizione di scacchi. Offline, open source.

@@ -1,0 +1,31 @@
+Chess Roguelike is a roguelike in which every fight is a chess position.
+
+You walk a top-down map. When you touch an enemy, a battle opens on a chessboard and you play it out move by move. The chess is the real thing: Stockfish, the open-source chess engine, runs on your phone. It plays the strong enemies and judges your mistakes.
+
+THIS IS A BETA
+The beta has one zone and one opening, the Italian Game, which you play as White. It is small on purpose: it is here to test the idea and the chess. Bugs and ideas are welcome on GitHub.
+
+THREE KINDS OF ENEMY
+- Puzzle: a tactical puzzle from the Lichess puzzle database. Find the winning move, or any move that gives checkmate. A wrong move costs HP, and the game explains it with an arrow and a sentence.
+- Opening: a fight in the theory of the Italian Game. You must play the book moves, and every move comes with the idea behind it. A move that leaves the book is taken back and explained.
+- Strong enemy: you start with a clear advantage and must turn it into a win within a limited number of moves. Your mistakes cost HP in proportion to the advantage you throw away, and the enemy's bar shows how close you are. If you run out of moves, the enemy escapes.
+
+YOUR RUN
+You have HP for the whole run, and one potion to heal. The game saves by itself and resumes where you left it, even in the middle of a battle. At the start of a run you choose a level: Beginner, Club or Strong.
+
+FREE AND OPEN
+- Free, with no ads and no purchases.
+- No account, and it works offline.
+- No data collected: the app has no internet access and asks for no permissions.
+- Open source under the GPLv3: https://github.com/Orasz/chess-roguelike
+- Languages: English and Italian.
+- For players aged 18 and over during the beta.
+
+CREDITS
+- Stockfish chess engine (GPLv3), running on the phone.
+- Puzzles from the Lichess puzzle database (CC0).
+- Art from the Ninja Adventure pack by pixel-boy (CC0) and Pixel Chess Pieces by SpicyGame (CC0).
+- Godot Engine (MIT).
+
+Source code and bug reports: https://github.com/Orasz/chess-roguelike
+Privacy policy: https://github.com/Orasz/chess-roguelike/blob/main/PRIVACY.md
