@@ -20,7 +20,7 @@ the measurement.
 
 - **The light build.** Stockfish `sf_19` with the patch of
   [niklasf/Stockfish commit 81348d3](https://github.com/niklasf/Stockfish/commit/81348d3fb4f68bda5c442e7459de78ab00acbc55)
-  (simple mirrored piece-square features, authored by sscg13) and the net `nn-61e7af4bb97d.nnue`.
+  (the P_hm feature set: 12 piece types x 64 squares = 768 inputs, mirrored by king side; authored by sscg13) and the net `nn-61e7af4bb97d.nnue`.
   Both were taken from the files Lichess vendors, and both were downloaded into `build/` only.
   - Patch: `https://github.com/niklasf/Stockfish/commit/81348d3fb4f68bda5c442e7459de78ab00acbc55.patch`,
     105,794 bytes, SHA-256 `37a59c2ba8b615077f1d0f321e541bd317c6ab8d6af1d75099a7093f101d65d9`.
