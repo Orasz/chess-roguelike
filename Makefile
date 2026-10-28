@@ -54,6 +54,9 @@ native-macos: net stockfish-tree
 native-android: net stockfish-tree
 	scons -C native platform=android arch=arm64 target=template_debug $(SCONS_ENGINE)
 
+native-android-release: net stockfish-tree
+	scons -C native platform=android arch=arm64 target=template_release $(SCONS_ENGINE)
+
 apk: native-android import
 	mkdir -p build
 	$(GODOT) --headless --path game --export-debug "Android Dev" ../build/chess-roguelike-dev.apk
@@ -63,6 +66,75 @@ install: apk
 
 logcat:
 	$(ADB) logcat -s godot
+
+# The release bundle for Google Play (docs/release.md). It is signed with the author's upload key, which
+# reaches Godot only through the three variables below, set in the author's own shell: nothing here
+# reads, prints or stores the password. The bundle's name follows the "Android Play" preset's version, so
+# a version bump is made in game/export_presets.cfg and nowhere else.
+PLAY_PRESET := Android Play
+preset_option = $(shell python3 -m tools.release.preset game/export_presets.cfg "$(PLAY_PRESET)" $(1))
+AAB_OUT = build/chess-roguelike-$(call preset_option,version/name)-$(call preset_option,version/code).aab
+AAB ?= $(AAB_OUT)
+APKS := build/chess-roguelike-play.apks
+BUNDLETOOL ?= build/tools/bundletool.jar
+BUNDLETOOL_RUN = "$(JAVA_HOME)/bin/java" -jar "$(BUNDLETOOL)"
+TEMPLATE_VERSION_FILE := game/android/.build_version
+
+require-release-keystore:
+	@missing=""; \
+	[ -n "$$GODOT_ANDROID_KEYSTORE_RELEASE_PATH" ] || missing="$$missing GODOT_ANDROID_KEYSTORE_RELEASE_PATH"; \
+	[ -n "$$GODOT_ANDROID_KEYSTORE_RELEASE_USER" ] || missing="$$missing GODOT_ANDROID_KEYSTORE_RELEASE_USER"; \
+	[ -n "$$GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD" ] || missing="$$missing GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD"; \
+	if [ -n "$$missing" ]; then \
+		echo "The upload key is not set up. Export these in your shell (docs/release.md):$$missing"; exit 1; \
+	fi; \
+	[ -f "$$GODOT_ANDROID_KEYSTORE_RELEASE_PATH" ] \
+		|| { echo "The file that GODOT_ANDROID_KEYSTORE_RELEASE_PATH names does not exist"; exit 1; }
+
+require-bundletool:
+	@test -f "$(BUNDLETOOL)" || { echo "$(BUNDLETOOL) is missing: download bundletool as docs/release.md says"; exit 1; }
+
+# Godot's Gradle build template, unzipped into game/android/ (ignored by git: it weighs about 216 MB).
+# The only way to install it from the command line is the --install-android-build-template flag, which
+# works together with an export. The export here must fail on purpose, before it builds anything: the
+# release keystore variable points at a file that does not exist. The template is reinstalled when its
+# version file does not name the Godot in use, because Godot refuses to build with a stale one.
+android-template:
+	@set -e; \
+	want=$$($(GODOT) --version | cut -d. -f1-4); \
+	if [ -f $(TEMPLATE_VERSION_FILE) ] && [ "$$(cat $(TEMPLATE_VERSION_FILE))" = "$$want" ]; then exit 0; fi; \
+	echo "Installing the Android build template $$want into game/android"; \
+	rm -rf game/android; \
+	mkdir -p build; \
+	out=$$(env -u GODOT_ANDROID_KEYSTORE_RELEASE_USER -u GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD \
+		GODOT_ANDROID_KEYSTORE_RELEASE_PATH=/nonexistent/no-keystore.jks \
+		$(GODOT) --headless --path game --install-android-build-template \
+		--export-release "$(PLAY_PRESET)" ../build/.template-probe.aab 2>&1) || true; \
+	[ -f $(TEMPLATE_VERSION_FILE) ] || { echo "Godot did not install the template:"; echo "$$out"; exit 1; }
+
+aab: require-release-keystore native-android-release import android-template
+	mkdir -p build
+	rm -f $(AAB_OUT)
+	$(GODOT) --headless --path game --export-release "$(PLAY_PRESET)" ../$(AAB_OUT)
+	@test -f $(AAB_OUT) || { echo "The export did not produce $(AAB_OUT): read Godot's messages above"; exit 1; }
+	@echo "Built $(AAB_OUT): now run make check-aab"
+
+check-aab: require-bundletool
+	@test -f "$(AAB)" || { echo "No bundle at $(AAB): run make aab, or pass AAB=<file>"; exit 1; }
+	python3 -m tools.release.check_aab "$(AAB)" --bundletool "$(BUNDLETOOL)"
+
+# Builds the APKs of the bundle for the connected phone, signed with the upload key, and installs them.
+# bundletool takes a password only from a file, so bash hands it a pipe (process substitution): the
+# password goes neither to disk nor to a command line.
+install-aab: require-release-keystore require-bundletool
+	@test -f "$(AAB)" || { echo "No bundle at $(AAB): run make aab, or pass AAB=<file>"; exit 1; }
+	rm -f $(APKS)
+	@bash -c '$(BUNDLETOOL_RUN) build-apks --bundle="$(AAB)" --output=$(APKS) --connected-device \
+		--adb="$(ADB)" --ks="$$GODOT_ANDROID_KEYSTORE_RELEASE_PATH" \
+		--ks-key-alias="$$GODOT_ANDROID_KEYSTORE_RELEASE_USER" \
+		--ks-pass=file:<(printf %s "$$GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD") \
+		--key-pass=file:<(printf %s "$$GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD")'
+	$(BUNDLETOOL_RUN) install-apks --apks=$(APKS) --adb="$(ADB)"
 
 # Godot 4.7.2's headless editor crashes when it discovers a GDExtension that is
 # not yet listed in .godot/extension_list.cfg in a project it has imported before.
@@ -141,4 +213,5 @@ check-engine: stockfish-cli
 	if [ "$$nodes" = "$(BENCH_NODES)" ]; then echo "bench: $$nodes nodes, as expected"; \
 	else echo "bench: $${nodes:-no node count} nodes, expected $(BENCH_NODES)"; exit 1; fi
 
-.PHONY: pot net stockfish-tree stockfish-cli check-engine native-macos native-android apk install logcat import test test-tools legal puzzles strong-sim
+.PHONY: pot net stockfish-tree stockfish-cli check-engine native-macos native-android native-android-release apk install logcat \
+	android-template aab check-aab install-aab require-release-keystore require-bundletool import test test-tools legal puzzles strong-sim

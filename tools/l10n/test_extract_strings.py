@@ -48,9 +48,13 @@ class ExtractStringsTest(unittest.TestCase):
         ))
         self.assertEqual(self.entries(), [("", "Chess Roguelike"), ("", "Two\nlines")])
 
-    def test_skips_tests_and_addons(self):
+    def test_skips_tests_addons_and_the_android_build_template(self):
         self.write("kept/a.gd", 'var a := tr("Kept")\n')
-        for skipped in ("addons/gut/a.gd", "test/unit/a.gd", "tools/a.gd", "spike/a.gd", "spike/a.tscn"):
+        skipped_files = (
+            "addons/gut/a.gd", "test/unit/a.gd", "tools/a.gd", "spike/a.gd", "spike/a.tscn",
+            "android/build/a.gd", "android/build/a.tscn",
+        )
+        for skipped in skipped_files:
             self.write(skipped, 'var a := tr("Skipped")\ntext = "Skipped"\n')
         self.assertEqual(self.entries(), [("", "Kept")])
 

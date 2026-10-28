@@ -88,3 +88,10 @@ Then use these `make` targets:
 | `make apk` | Exports the "Android Dev" preset, `build/chess-roguelike-dev.apk` (debug, id `io.github.orasz.chessroguelike.dev`) |
 | `make install` | Installs it on the USB-connected phone |
 | `make logcat` | Follows Godot's log on the phone |
+
+## Release
+
+`make aab` builds the signed Android App Bundle for Google Play, `make check-aab` checks it (16 KB page
+alignment, the release engine library, the manifest) and `make install-aab` installs it on the USB phone. The
+upload key stays in the author's own shell and never in the repository. The steps, the key rules and how to
+raise the version are in [`docs/release.md`](docs/release.md).

@@ -3,6 +3,8 @@
 /build/
 game/bin/macos/
 game/bin/android/
+# Godot's Gradle build template, installed by `make android-template`.
+game/android/
 native/*.nnue
 !native/nn-61e7af4bb97d.nnue
 *.os

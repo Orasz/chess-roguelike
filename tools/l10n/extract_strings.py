@@ -20,7 +20,8 @@ import sys
 from pathlib import Path
 from typing import NamedTuple
 
-SKIPPED_DIRECTORIES = {"addons", "test", "tools", "spike"}
+# android/ holds Godot's Gradle build template (make android-template), whose sample scripts are not ours.
+SKIPPED_DIRECTORIES = {"addons", "test", "tools", "spike", "android"}
 
 _STRING = r'"((?:[^"\\]|\\.)*)"'
 # `tr(` as a call: not the tail of another name (`str(`), optionally on an object (`_translator.tr(`).
