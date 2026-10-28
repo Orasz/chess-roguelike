@@ -51,7 +51,7 @@ Everything the repository ships that someone else made, with its licence.
 
   Apache-2.0 §4(a) asks that whoever receives the libraries also receives the licence: its text is in the app,
   on the About screen, under Licences, in the part titled "Licence texts" (the entry named `Apache-2.0`, which
-  Godot's `Engine.get_license_info()` holds). The libraries ship with no NOTICE file of their own.
+  Godot's `Engine.get_license_info()` holds). The bundle contains no NOTICE file for them.
 
 - Development only: **GUT** (the unit test framework, vendored in `game/addons/gut/`): MIT, by
   Tom "Butch" Wesley. Its licence is in [`game/addons/gut/LICENSE.md`](game/addons/gut/LICENSE.md).

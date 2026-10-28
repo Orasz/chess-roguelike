@@ -114,7 +114,8 @@ The runs above let the engine play the player, with the hint. These two do not.
 
 `make strong-sim RATING=1200 PLAYER_ELO=1200` and `make strong-sim RATING=800 PLAYER_ELO=800` ran at the constants in
 the table above, `DECISIVE_GAIN_CP = 150` and `DECISIVE_MIN_CP = 500`. The enemy plays at the rating, like in a run: a
-Beginner-preset player (800) meets an enemy at 800 and a Club player (1200) one at 1200.
+Club-preset player (1200) meets an enemy at 1200. The 800 run is a weaker proxy, not a preset: the presets are
+Beginner 600, Club 1200 and Strong 1800 (`Tuning.RATING_PRESETS`), so no preset is at 800.
 
 | # | Date | Rating (enemy Elo) | Player Elo | count | won_share | median_moves_to_win | mean_hp_lost | Escapes | Mates or draws | Data |
 |---|---|---|---|---|---|---|---|---|---|---|
@@ -126,8 +127,9 @@ lost.
 
 ### What they suggest
 
-- **A Club player is likely to beat the strong enemy in about six battles out of ten.** Run 7 won 46 of 75. At 800, run
-  8 won 48 of 75. The difference between the two is two positions, inside the noise that the earlier runs showed.
+- **The 1200 proxy wins about six battles out of ten.** Run 7 won 46 of 75. The 800 proxy of run 8 won 48 of 75. This
+  is a statement about the model, not about real players: the proxy never plays outside the engine's five best lines,
+  so it plays no blunder worse than the fifth-best move, and real players can do worse. The difference between the two is two positions, inside the noise that the earlier runs showed.
 - **Almost every battle that is not won is an escape.** All 29 and 27 of them ran out of the 12 moves; there was no
   mate against the player and no draw. When the player does win, it is quick: the median is 5.5 and 5.0 moves, and
   the slowest win took all 12.

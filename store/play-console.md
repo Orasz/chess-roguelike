@@ -88,8 +88,10 @@ it in a private window before saving, to check that it loads.
   youthful (research §1.6), so keep any new store art free of young characters.
   - **The in-game hero is a young-looking sprite.** The player's character on the map and in the battle portrait
     is the "Boy" of the Ninja Adventure pack (`game/assets/ninja_adventure/characters/boy.png` and `boy_walk.png`,
-    CC0). The author decided on 2026-10-28 to keep it. The store graphics show no human character, so the sprite
-    appears only inside the game. If Google asks for changes (for example, if the review reads it as aimed at
+    CC0). The author decided on 2026-10-28 to keep it. The feature graphic and the icon show no human
+    character, but the phone screenshots will: they are the overworld (the walker on the map) and a battle (the
+    player's portrait on its plate), so the sprite is visible on the listing. The author accepts this (decision of
+    2026-10-28). If Google asks for changes (for example, if the review reads it as aimed at
     children), the sprite is swapped: replace those two files and update the entries in `CREDITS.md`, then run
     `make legal`.
 - [ ] **Restrict Minor Access** (18+ only, optional; check the exact wording in the console). It blocks
@@ -109,7 +111,7 @@ it in a private window before saving, to check that it loads.
 
 - [ ] **Does your app collect or share any of the required user data types?** **No.**
   - "Collect" means sending data off the device. The app sends nothing: it has no network access, no analytics,
-    no ads and no SDK. The run is saved in a file in the app's private storage. The file is kept out of Google's
+    no advertising, analytics or tracking SDKs. The run is saved in a file in the app's private storage. The file is kept out of Google's
     cloud backup (`allowBackup="false"`); when the player sets up a new phone from this one, Android's own
     device-to-device transfer may copy it to that new phone. A transfer between the player's own devices made by
     the operating system is not "collection" by the developer, since the data never reaches the developer or any
