@@ -41,14 +41,14 @@ LIBS_COMPRESSED_NAME = "bundle config uncompresses native libraries"
 ALIGNMENT_NAME = "bundle config asks for 16 KB page alignment"
 
 
-def manifest(package="io.example.play", code="3", target="36", extra="", minimum="24"):
+def manifest(package="io.example.play", code="3", target="36", extra="", minimum="24", application='android:allowBackup="false"'):
     return f"""<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     android:versionCode="{code}" android:versionName="0.1.0" package="{package}">
   <uses-sdk android:minSdkVersion="{minimum}" android:targetSdkVersion="{target}" />
   <uses-feature android:glEsVersion="0x00030000" android:required="true" />
   {extra}
-  <application android:allowBackup="false" />
+  <application {application} />
 </manifest>"""
 
 
@@ -191,6 +191,23 @@ class CheckBundleTest(unittest.TestCase):
         results = self.run_checks(FakeTools(manifest_xml=manifest(extra=extra)))
         self.assertFalse(verdicts(results)["manifest declares no permission"])
 
+    def test_a_manifest_that_allows_the_backup_fails_and_so_does_one_that_says_nothing(self):
+        for application in ('android:allowBackup="true"', ""):
+            with self.subTest(application=application):
+                results = self.run_checks(FakeTools(manifest_xml=manifest(application=application)))
+                self.assertFalse(verdicts(results)['manifest sets android:allowBackup="false"'])
+
+    def test_a_debuggable_manifest_fails_and_an_explicit_false_does_not(self):
+        debuggable = manifest(application='android:allowBackup="false" android:debuggable="true"')
+        results = self.run_checks(FakeTools(manifest_xml=debuggable))
+        self.assertFalse(verdicts(results)["manifest is not debuggable"])
+        explicit_false = manifest(application='android:allowBackup="false" android:debuggable="false"')
+        self.assertTrue(verdicts(self.run_checks(FakeTools(manifest_xml=explicit_false)))["manifest is not debuggable"])
+
+    def test_a_manifest_without_an_application_element_fails_the_backup_check(self):
+        results = self.run_checks(FakeTools(manifest_xml=manifest().replace("<application", "<!--").replace("/>\n</manifest>", "-->\n</manifest>")))
+        self.assertFalse(verdicts(results)['manifest sets android:allowBackup="false"'])
+
     def test_an_unreadable_manifest_fails_every_manifest_check(self):
         results = self.run_checks(FakeTools(manifest_xml="not xml at all"))
         manifest_checks = [result for result in results if result.name.startswith("manifest")]
@@ -286,8 +303,22 @@ class RealOutputTest(unittest.TestCase):
     def test_the_manifest_bundletool_printed_for_our_bundle_passes(self):
         expected = check_aab.Expected("io.github.orasz.chessroguelike", "1")
         results = check_aab.check_manifest(REAL_MANIFEST, expected)
-        self.assertEqual(len(results), 5)
+        self.assertEqual(len(results), 7)
         self.assertTrue(all(result.passed for result in results), [r.line() for r in results])
+
+    def test_the_real_manifest_fails_when_mutated_to_allow_backup_or_to_be_debuggable(self):
+        expected = check_aab.Expected("io.github.orasz.chessroguelike", "1")
+        mutations = {
+            'manifest sets android:allowBackup="false"': REAL_MANIFEST.replace('allowBackup="false"', 'allowBackup="true"'),
+            "manifest is not debuggable": REAL_MANIFEST.replace(
+                'android:allowBackup="false"', 'android:allowBackup="false" android:debuggable="true"'
+            ),
+        }
+        for failing, text in mutations.items():
+            with self.subTest(failing=failing):
+                verdict = {r.name: r.passed for r in check_aab.check_manifest(text, expected)}
+                self.assertFalse(verdict[failing])
+                self.assertEqual([n for n, ok in verdict.items() if not ok], [failing])
 
     def test_the_config_bundletool_printed_for_our_bundle_passes(self):
         results = check_aab.check_config(REAL_CONFIG)

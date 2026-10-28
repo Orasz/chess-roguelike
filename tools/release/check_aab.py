@@ -10,7 +10,8 @@ It prints one PASS or FAIL line per condition and exits with 1 when any of them 
 * the Stockfish library for the release template is in the bundle, and no library of another ABI is;
 * every arm64-v8a library has only LOAD segments aligned to 2**14, read with the NDK's llvm-objdump;
 * the manifest carries the Play application id and the preset's versionCode, has minSdkVersion 24 and
-  targetSdkVersion 36, and declares no permission.
+  targetSdkVersion 36, declares no permission, sets `android:allowBackup="false"` (PRIVACY.md relies on it:
+  the save stays out of Google's cloud backup) and is not debuggable (a release bundle must not be).
 
 The application id and the versionCode come from the "Android Play" preset, so a version bump in
 game/export_presets.cfg is all the check needs. bundletool and llvm-objdump run through the small Tools
@@ -121,6 +122,8 @@ def check_manifest(manifest_text: str, expected: Expected) -> list[Result]:
         f"manifest minSdkVersion is {MIN_SDK}",
         f"manifest targetSdkVersion is {TARGET_SDK}",
         "manifest declares no permission",
+        'manifest sets android:allowBackup="false"',
+        "manifest is not debuggable",
     ]
     start, end = manifest_text.find("<manifest"), manifest_text.rfind("</manifest>")
     try:
@@ -135,12 +138,17 @@ def check_manifest(manifest_text: str, expected: Expected) -> list[Result]:
     permissions = [child.get(f"{ANDROID_NS}name", "?") for child in root if child.tag.startswith("uses-permission")]
     package = root.get("package")
     code = root.get(f"{ANDROID_NS}versionCode")
+    application = root.find("application")
+    backup = application.get(f"{ANDROID_NS}allowBackup") if application is not None else None
+    debuggable = application.get(f"{ANDROID_NS}debuggable") if application is not None else None
     return [
         Result(names[0], package == expected.application_id, f"found {package}"),
         Result(names[1], code == expected.version_code, f"found {code}"),
         Result(names[2], minimum == MIN_SDK, f"found {minimum}"),
         Result(names[3], target == TARGET_SDK, f"found {target}"),
         Result(names[4], not permissions, "found " + ", ".join(permissions)),
+        Result(names[5], backup == "false", f"allowBackup is {backup}" if backup else "allowBackup is not set (it defaults to true)"),
+        Result(names[6], debuggable in (None, "false"), f"debuggable is {debuggable}"),
     ]
 
 
