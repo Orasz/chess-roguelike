@@ -8,27 +8,38 @@ const PLAY := "preset.1"
 const PLAY_ID := "io.github.orasz.chessroguelike"
 const STORE_ICON := "../store/graphics/icon_512.png"
 
-## Every option key the presets may carry, written from the EditorExportPlatformAndroid class reference
-## (Godot 4.7). Godot ignores a misspelt key without a word, so a typo would silently fall back to the
-## default: the test rejects any key outside this list. `permissions/*` keys are checked by prefix.
-const KNOWN_KEYS: Array[String] = [
-	"architectures/arm64-v8a", "architectures/armeabi-v7a", "architectures/x86", "architectures/x86_64",
-	"command_line/extra_args", "custom_template/debug", "custom_template/release",
-	"gesture/swipe_to_dismiss",
-	"gradle_build/android_source_template", "gradle_build/compress_native_libraries",
-	"gradle_build/custom_theme_attributes", "gradle_build/export_format",
-	"gradle_build/gradle_build_directory", "gradle_build/min_sdk", "gradle_build/minification",
-	"gradle_build/target_sdk", "gradle_build/use_gradle_build",
-	"graphics/opengl_debug",
-	"keystore/debug", "keystore/debug_password", "keystore/debug_user",
-	"keystore/release", "keystore/release_password", "keystore/release_user",
-	"launcher_icons/adaptive_background_432x432", "launcher_icons/adaptive_foreground_432x432",
-	"launcher_icons/adaptive_monochrome_432x432", "launcher_icons/main_192x192",
-	"package/app_category", "package/exclude_from_recents", "package/name",
-	"package/retain_data_on_uninstall", "package/show_as_launcher_app", "package/show_in_android_tv",
-	"package/show_in_app_library", "package/signed", "package/unique_name",
-	"user_data_backup/allow", "version/code", "version/name",
-]
+## The options the identity depends on, with their exact value, per preset. Godot ignores a misspelt
+## option without a word and falls back to its default, so a typo here would silently change the
+## app: the key being absent is what fails. The list is open on purpose: the editor writes every
+## option of a preset when it saves `export_presets.cfg`, and those extra keys are fine.
+const REQUIRED_DEV := {
+	"package/unique_name": "io.github.orasz.chessroguelike.dev",
+	"package/name": "Chess Roguelike Dev",
+	"gradle_build/use_gradle_build": false,
+	"architectures/arm64-v8a": true,
+	"launcher_icons/main_192x192": "res://assets/icon/launcher_192.png",
+	"launcher_icons/adaptive_foreground_432x432": "res://assets/icon/adaptive_fg_432.png",
+	"launcher_icons/adaptive_background_432x432": "res://assets/icon/adaptive_bg_432.png",
+}
+const REQUIRED_PLAY := {
+	"package/unique_name": PLAY_ID,
+	"package/name": "Chess Roguelike",
+	"version/code": 1,
+	"version/name": "0.1.0",
+	"gradle_build/use_gradle_build": true,
+	"gradle_build/export_format": 1,
+	"gradle_build/min_sdk": "24",
+	"gradle_build/target_sdk": "36",
+	"gradle_build/compress_native_libraries": false,
+	"architectures/arm64-v8a": true,
+	"architectures/armeabi-v7a": false,
+	"architectures/x86": false,
+	"architectures/x86_64": false,
+	"user_data_backup/allow": false,
+	"launcher_icons/main_192x192": "res://assets/icon/launcher_192.png",
+	"launcher_icons/adaptive_foreground_432x432": "res://assets/icon/adaptive_fg_432.png",
+	"launcher_icons/adaptive_background_432x432": "res://assets/icon/adaptive_bg_432.png",
+}
 
 ## The launcher icons, with the least size each Android generation needs.
 const ICON_SIZES := {
@@ -116,11 +127,13 @@ func test_both_presets_keep_the_same_filters() -> void:
 		assert_eq(_presets.get_value(preset, "exclude_filter"), "test/*, addons/gut/*, tools/*, spike/*, .gutconfig.json", preset)
 
 
-func test_every_option_key_is_a_real_godot_key() -> void:
+func test_every_option_the_identity_depends_on_is_present_with_its_value() -> void:
 	for preset: String in [DEV, PLAY]:
-		for key in _presets.get_section_keys(preset + ".options"):
-			var known: bool = KNOWN_KEYS.has(key) or key.begins_with("permissions/")
-			assert_true(known, "%s: '%s' is not an option of Godot's Android exporter" % [preset, key])
+		var required: Dictionary = REQUIRED_DEV if preset == DEV else REQUIRED_PLAY
+		var section := preset + ".options"
+		for key: String in required:
+			assert_true(_presets.has_section_key(section, key), "%s lacks '%s' (misspelt?)" % [preset, key])
+			assert_eq(_presets.get_value(section, key, null), required[key], "%s: %s" % [preset, key])
 
 
 func test_every_launcher_icon_exists_at_its_minimum_size() -> void:
