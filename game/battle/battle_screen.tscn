@@ -1,9 +1,10 @@
-[gd_scene load_steps=6 format=3 uid="uid://buyo1bn27hhfe"]
+[gd_scene load_steps=7 format=3 uid="uid://buyo1bn27hhfe"]
 
 [ext_resource type="Script" path="res://battle/battle_screen.gd" id="1_screen"]
 [ext_resource type="Theme" uid="uid://ddmt1cv3jgick" path="res://ui/theme.tres" id="2_theme"]
 [ext_resource type="PackedScene" uid="uid://bo7tg1virwl3s" path="res://battle/board_view.tscn" id="3_board"]
 [ext_resource type="Texture2D" path="res://assets/ninja_adventure/characters/boy.png" id="4_hero"]
+[ext_resource type="Script" path="res://ui/safe_margin_container.gd" id="5_safe"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_enemy_fill"]
 bg_color = Color(0.86, 0.3, 0.27, 1)
@@ -43,6 +44,7 @@ theme_override_constants/margin_left = 16
 theme_override_constants/margin_top = 24
 theme_override_constants/margin_right = 16
 theme_override_constants/margin_bottom = 16
+script = ExtResource("5_safe")
 
 [node name="Column" type="VBoxContainer" parent="Margin"]
 layout_mode = 2

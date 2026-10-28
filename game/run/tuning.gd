@@ -59,5 +59,12 @@ const MAX_WAIT_STEP_S := 0.25
 ## UI: how long an HP bar takes to move to its new value, in seconds.
 const BAR_TWEEN_S := 0.4
 
+## Screen: the widest window, as width/height, that expands the layout downwards (a wider one is
+## pillarboxed); the least height of the dialogue box, and the smallest side of the board, in
+## viewport pixels.
+const MAX_EXPAND_ASPECT := 0.75
+const DIALOGUE_MIN_HEIGHT := 160
+const BOARD_MIN_SIDE := 384
+
 ## Player rating: the presets of the new-run menu, by name. The slice has no rating updates.
 const RATING_PRESETS := {"Beginner": 600, "Club": 1200, "Strong": 1800}

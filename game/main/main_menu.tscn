@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://main/main_menu.gd" id="1_menu"]
+[ext_resource type="Script" path="res://ui/safe_margin_container.gd" id="9_safe"]
 
 [node name="MainMenu" type="Control"]
 layout_mode = 3
@@ -21,56 +22,61 @@ grow_vertical = 2
 mouse_filter = 2
 color = Color(0.17, 0.3, 0.27, 1)
 
-[node name="Center" type="CenterContainer" parent="."]
+[node name="Safe" type="MarginContainer" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("9_safe")
 
-[node name="Column" type="VBoxContainer" parent="Center"]
+[node name="Center" type="CenterContainer" parent="Safe"]
+layout_mode = 2
+
+[node name="Column" type="VBoxContainer" parent="Safe/Center"]
 custom_minimum_size = Vector2(440, 0)
 layout_mode = 2
 theme_override_constants/separation = 20
 
-[node name="Title" type="Label" parent="Center/Column"]
+[node name="Title" type="Label" parent="Safe/Center/Column"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 56
 text = "Chess Roguelike"
 horizontal_alignment = 1
 
-[node name="TitleGap" type="Control" parent="Center/Column"]
+[node name="TitleGap" type="Control" parent="Safe/Center/Column"]
 custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
 
-[node name="ContinueButton" type="Button" parent="Center/Column"]
+[node name="ContinueButton" type="Button" parent="Safe/Center/Column"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 88)
 layout_mode = 2
 focus_mode = 0
 text = "Continue"
 
-[node name="NewRunLabel" type="Label" parent="Center/Column"]
+[node name="NewRunLabel" type="Label" parent="Safe/Center/Column"]
 layout_mode = 2
 text = "New run"
 horizontal_alignment = 1
 
-[node name="BeginnerButton" type="Button" parent="Center/Column"]
+[node name="BeginnerButton" type="Button" parent="Safe/Center/Column"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 88)
 layout_mode = 2
 focus_mode = 0
 text = "Beginner"
 
-[node name="ClubButton" type="Button" parent="Center/Column"]
+[node name="ClubButton" type="Button" parent="Safe/Center/Column"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 88)
 layout_mode = 2
 focus_mode = 0
 text = "Club"
 
-[node name="StrongButton" type="Button" parent="Center/Column"]
+[node name="StrongButton" type="Button" parent="Safe/Center/Column"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 88)
 layout_mode = 2

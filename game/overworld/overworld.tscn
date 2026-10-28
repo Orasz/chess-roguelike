@@ -1,8 +1,9 @@
-[gd_scene load_steps=4 format=3 uid="uid://cgdi85hda6tpi"]
+[gd_scene load_steps=5 format=3 uid="uid://cgdi85hda6tpi"]
 
 [ext_resource type="Script" path="res://overworld/overworld.gd" id="1_world"]
 [ext_resource type="Theme" uid="uid://ddmt1cv3jgick" path="res://ui/theme.tres" id="2_theme"]
 [ext_resource type="Texture2D" uid="uid://bhj210a5gfexp" path="res://assets/ninja_adventure/characters/boy_walk.png" id="3_hero"]
+[ext_resource type="Script" path="res://ui/safe_margin_container.gd" id="4_safe"]
 
 [node name="Overworld" type="Node2D"]
 script = ExtResource("1_world")
@@ -33,29 +34,33 @@ grow_vertical = 2
 mouse_filter = 2
 theme = ExtResource("2_theme")
 
-[node name="Plate" type="PanelContainer" parent="Hud/Root"]
+[node name="Safe" type="MarginContainer" parent="Hud/Root"]
 layout_mode = 1
-anchors_preset = 12
-anchor_top = 1.0
+anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 16.0
-offset_top = -16.0
-offset_right = -16.0
-offset_bottom = -16.0
 grow_horizontal = 2
-grow_vertical = 0
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 16
+script = ExtResource("4_safe")
 
-[node name="Row" type="HBoxContainer" parent="Hud/Root/Plate"]
+[node name="Plate" type="PanelContainer" parent="Hud/Root/Safe"]
+layout_mode = 2
+size_flags_vertical = 8
+
+[node name="Row" type="HBoxContainer" parent="Hud/Root/Safe/Plate"]
 layout_mode = 2
 
-[node name="HpLabel" type="Label" parent="Hud/Root/Plate/Row"]
+[node name="HpLabel" type="Label" parent="Hud/Root/Safe/Plate/Row"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 text = "HP 100/100"
 
-[node name="PotionButton" type="Button" parent="Hud/Root/Plate/Row"]
+[node name="PotionButton" type="Button" parent="Hud/Root/Safe/Plate/Row"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(220, 64)
 layout_mode = 2

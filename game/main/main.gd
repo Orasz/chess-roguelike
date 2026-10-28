@@ -21,6 +21,8 @@ var engine: UciEngine
 var save_path := "user://run.json"
 ## The run under way, or null outside one.
 var run: RunState
+## What the Back button does on the menu. Tests replace it.
+var quit_app: Callable = _quit
 
 var _store: SaveStore
 var _bank: PuzzleBank
@@ -40,6 +42,8 @@ var _save_pending := false
 ## Starts the engine and loads the content. When the puzzles, the opening or the chunks of a zone
 ## cannot be loaded, it shows an error instead of the menu.
 func _ready() -> void:
+	_fit_window()
+	get_tree().root.size_changed.connect(_fit_window)
 	if engine == null:
 		engine = get_node("/root/ChessEngine") as UciEngine
 	# False when the engine already runs, which is fine.
@@ -116,8 +120,34 @@ func open_encounter(id: String) -> void:
 
 func _notification(what: int) -> void:
 	match what:
-		NOTIFICATION_APPLICATION_PAUSED, NOTIFICATION_WM_CLOSE_REQUEST, NOTIFICATION_WM_GO_BACK_REQUEST:
+		NOTIFICATION_APPLICATION_PAUSED, NOTIFICATION_WM_CLOSE_REQUEST:
 			_save_now()
+		NOTIFICATION_WM_GO_BACK_REQUEST:
+			_save_now()
+			_go_back()
+
+
+## Expands the layout on tall windows and pillarboxes wide ones, see `ScreenFit`.
+func _fit_window() -> void:
+	var root := get_tree().root
+	root.content_scale_aspect = ScreenFit.aspect_for(root.size)
+
+
+## The Back button goes back one screen: from the overworld, a battle or the end of a run to the
+## menu, with the run kept, and from the menu out of the app, unless the menu has a question open
+## to close first. It never leaves the app from a battle.
+func _go_back() -> void:
+	if _screen is MainMenu:
+		if not (_screen as MainMenu).handle_back():
+			quit_app.call()
+	elif _screen is Overworld or _screen is BattleScreen or _screen is RunEnd:
+		show_menu()
+	else:
+		quit_app.call()
+
+
+func _quit() -> void:
+	get_tree().quit()
 
 
 ## A save still scheduled is written now, since the deferred call never comes once the node is freed.

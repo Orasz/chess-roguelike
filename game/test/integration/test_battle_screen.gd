@@ -73,6 +73,21 @@ func test_board_is_square_and_fits_from_9_16_to_9_20():
 		assert_true(board.get_global_rect().end.y <= dialogue.get_global_rect().position.y, "board above dialogue at %s" % window_size)
 		assert_true(dialogue.get_global_rect().end.y <= window_size.y, "dialogue inside the screen at %s" % window_size)
 
+func test_board_fits_a_3_by_4_window():
+	window.size = Vector2(720, 960)
+	await wait_process_frames(2)
+	var board := _board()
+	var dialogue: Control = screen.get_node("%Dialogue")
+	assert_eq(board.size.x, board.size.y, "square")
+	assert_gte(board.size.x, float(Tuning.BOARD_MIN_SIDE))
+	assert_eq(fmod(board.size.x, 128.0), 0.0, "a multiple of 128 px")
+	assert_true(dialogue.get_global_rect().end.y <= 960.0, "the dialogue ends inside the window")
+	assert_gte(dialogue.get_parent().size.y, float(Tuning.DIALOGUE_MIN_HEIGHT), "the dialogue box keeps its least height")
+	assert_true(board.get_global_rect().end.y <= dialogue.get_global_rect().position.y, "board above dialogue")
+	window.size = Vector2(720, 1280)
+	await wait_process_frames(2)
+	assert_eq(_board().size.x, 640.0, "taller windows get the full board back")
+
 func test_a_narrower_screen_gets_a_smaller_multiple_of_128():
 	window.size = Vector2(600, 1200)
 	await wait_process_frames(2)

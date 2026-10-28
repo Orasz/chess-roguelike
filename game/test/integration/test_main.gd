@@ -7,6 +7,8 @@ const PATH := "user://test_main_run.json"
 
 ## The engine of the latest `_main()`.
 var fake
+## How many times a test's `quit_app` ran.
+var quits := 0
 var bank := PuzzleBank.load_file("res://data/puzzles/italian_game.json")
 ## Every Main of the test. A Main writes its scheduled save when it is freed, and GUT frees what it
 ## autofrees only after `after_each`, so `after_each` frees them itself before deleting the save.
@@ -14,6 +16,7 @@ var mains: Array[Node] = []
 
 
 func before_each():
+	quits = 0
 	_delete_saves()
 
 
@@ -348,3 +351,113 @@ func test_closing_the_window_or_going_back_saves_immediately():
 	main.run.take_damage(10)
 	main._notification(NOTIFICATION_WM_GO_BACK_REQUEST)
 	assert_eq(SaveStore.new(PATH).load_run().hp, 80)
+
+
+## The Main of a test, with a `quit_app` that counts instead of quitting.
+func _main_that_counts_quits() -> Main:
+	var main := _main()
+	main.quit_app = func() -> void: quits += 1
+	return main
+
+
+func test_the_window_aspect_follows_its_shape():
+	var main := _main()
+	var root := main.get_tree().root
+	assert_eq(root.content_scale_aspect, ScreenFit.aspect_for(root.size))
+
+
+func test_back_on_the_menu_quits():
+	var main := _main_that_counts_quits()
+	main._notification(NOTIFICATION_WM_GO_BACK_REQUEST)
+	assert_eq(quits, 1)
+
+
+func test_back_closes_the_new_run_confirmation_first():
+	var main: Main = await _main_with_a_saved_run()
+	main.quit_app = func() -> void: quits += 1
+	var saved := FileAccess.get_file_as_string(PATH)
+	_menu_button(main, "ClubButton").pressed.emit()
+	var confirm: Control = main.current_screen().get_node("%ConfirmNewRun")
+	assert_true(confirm.visible)
+	main._notification(NOTIFICATION_WM_GO_BACK_REQUEST)
+	assert_false(confirm.visible, "the question closes")
+	assert_eq(quits, 0, "and the app stays")
+	assert_true(main.current_screen() is MainMenu)
+	await wait_process_frames(1)
+	assert_eq(FileAccess.get_file_as_string(PATH), saved, "the save is unchanged")
+	main._notification(NOTIFICATION_WM_GO_BACK_REQUEST)
+	assert_eq(quits, 1, "with nothing left to close, back quits")
+
+
+func test_back_on_the_overworld_and_the_end_screen_goes_to_the_menu():
+	var main := _main_that_counts_quits()
+	main.start_run(1200, 42)
+	main._notification(NOTIFICATION_WM_GO_BACK_REQUEST)
+	assert_true(main.current_screen() is MainMenu)
+	assert_null(main.run)
+	assert_eq(quits, 0)
+	await wait_process_frames(1)
+	assert_true(_menu_button(main, "ContinueButton").visible, "the run is kept")
+	main.continue_run()
+	main.run.take_damage(Tuning.MAX_HP)
+	await wait_process_frames(5)
+	assert_true(main.current_screen() is RunEnd)
+	main._notification(NOTIFICATION_WM_GO_BACK_REQUEST)
+	assert_true(main.current_screen() is MainMenu)
+	assert_eq(quits, 0)
+
+
+func test_back_in_battle_returns_to_the_menu_and_keeps_the_run():
+	var main := _main_that_counts_quits()
+	main.start_run(1200, 42)
+	var id := _first_of_kind(main.run, "puzzle")
+	main.open_encounter(id)
+	var enc: PuzzleEncounter = main.current_screen().encounter
+	assert_true(await wait_for_signal(enc.input_enabled, 5))
+	main.run.take_damage(10)
+	main._notification(NOTIFICATION_WM_GO_BACK_REQUEST)
+	assert_true(main.current_screen() is MainMenu)
+	assert_eq(quits, 0, "back never quits from a battle")
+	assert_null(main.run)
+	await wait_process_frames(2)
+	var saved := SaveStore.new(PATH).load_run()
+	assert_eq(saved.hp, Tuning.MAX_HP - 10, "the run is saved")
+	assert_eq(saved.battle["id"], id, "in its battle")
+	_menu_button(main, "ContinueButton").pressed.emit()
+	var screen: Node = main.current_screen()
+	assert_true(screen is BattleScreen, "Continue restores the battle")
+	if screen is BattleScreen:
+		assert_eq((screen as BattleScreen).encounter.encounter_id, id)
+	assert_eq(main.run.hp, Tuning.MAX_HP - 10)
+
+
+## The player's move is saved, its damage is not, and the app goes back to the menu while the enemy
+## searches. The search ends with the screen. On Continue the encounter runs the search again, once.
+func test_back_during_the_enemy_search_keeps_the_move():
+	var main := _main_that_counts_quits()
+	main.start_run(1200, 42)
+	var id := _first_of_kind(main.run, "strong")
+	var record := _record_of(main.run, id)
+	var start := ChessRules.fen_after(record["fen"], PackedStringArray(record["moves"]).slice(0, 1))
+	fake.replies = [[FakeEngine.line(ChessRules.inspect(start)["legal"][0], 300)]]
+	main.open_encounter(id)
+	var enc: StrongEncounter = main.current_screen().encounter
+	assert_true(await wait_for_signal(enc.input_enabled, 5), "the opening evaluation")
+	enc.submit_move(ChessRules.inspect(enc.current_fen())["legal"][0])
+	var played := enc.moves.duplicate()
+	var reply: String = ChessRules.inspect(enc.current_fen())["legal"][0]
+	main._notification(NOTIFICATION_WM_GO_BACK_REQUEST)
+	assert_true(main.current_screen() is MainMenu)
+	assert_eq(quits, 0)
+	await wait_process_frames(3)
+	var on_disk := SaveStore.new(PATH).load_run()
+	assert_eq(PackedStringArray(on_disk.battle["moves"]), played, "the save holds the player's move")
+	assert_eq(on_disk.hp, Tuning.MAX_HP, "its damage is still to be charged")
+	main.free()
+	var resumed := _main()
+	fake.replies = [[FakeEngine.line(reply, 300)]]
+	assert_true(resumed.continue_run())
+	var resumed_enc: StrongEncounter = resumed.current_screen().encounter
+	assert_true(await wait_for_signal(resumed_enc.input_enabled, 5), "the enemy answered")
+	assert_eq(fake.searches.size(), 1, "exactly one search on the new engine")
+	assert_eq(resumed_enc.moves.size(), played.size() + 1, "and the enemy's reply is appended")

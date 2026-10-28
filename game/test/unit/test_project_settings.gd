@@ -20,3 +20,6 @@ func test_the_game_starts_at_the_main_scene():
 
 func test_every_screen_shares_the_one_theme():
 	assert_eq(ProjectSettings.get_setting("gui/theme/custom"), "res://ui/theme.tres")
+
+func test_back_does_not_quit_the_app():
+	assert_false(ProjectSettings.get_setting("application/config/quit_on_go_back"), "Main decides what Back does")

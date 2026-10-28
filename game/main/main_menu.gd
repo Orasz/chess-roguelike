@@ -32,6 +32,15 @@ func _ready() -> void:
 	(%CancelButton as Button).pressed.connect(_confirm_new_run.hide)
 
 
+## The Back button of the phone: closes the new-run question when it is open and returns true, and
+## returns false when there is nothing to close.
+func handle_back() -> bool:
+	if not _confirm_new_run.visible:
+		return false
+	_confirm_new_run.hide()
+	return true
+
+
 func _on_preset_pressed(preset: String) -> void:
 	var rating: int = Tuning.RATING_PRESETS[preset]
 	if not can_continue:

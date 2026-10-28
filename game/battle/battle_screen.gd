@@ -22,7 +22,9 @@ var _outcome := -1
 var _enemy_tween: Tween
 var _player_tween: Tween
 
-@onready var _margin: MarginContainer = $Margin
+@onready var _margin: SafeMarginContainer = $Margin
+@onready var _column: VBoxContainer = $Margin/Column
+@onready var _dialogue_panel: Control = $Margin/Column/DialoguePanel
 @onready var _enemy_name: Label = %EnemyName
 @onready var _enemy_sprite: TextureRect = %EnemySprite
 @onready var _enemy_hp: ProgressBar = %EnemyHp
@@ -40,7 +42,9 @@ func _ready() -> void:
 	_potion_button.pressed.connect(_on_potion_pressed)
 	_continue_button.pressed.connect(_on_continue_pressed)
 	_dialogue.gui_input.connect(_on_dialogue_input)
+	_dialogue_panel.custom_minimum_size.y = Tuning.DIALOGUE_MIN_HEIGHT
 	resized.connect(_fit_board)
+	_margin.margins_changed.connect(_fit_board)
 	_fit_board()
 
 
@@ -68,12 +72,27 @@ func open(new_encounter: Encounter, new_run: RunState) -> void:
 	encounter.begin()
 
 
-## Sizes the board to the largest multiple of `_BOARD_STEP` that fits between the gutters (the
-## side margins of `Margin`). The column that holds every row is as wide as the board, so the
-## plates and the dialogue line up with its edges, and it is centred.
+## Sizes the board to the largest multiple of `_BOARD_STEP` that fits both ways, never below
+## `Tuning.BOARD_MIN_SIDE`. Across, it fits between the gutters (the side margins of `Margin`).
+## Down, it fits in what the window leaves once the margins and every other row of the column
+## (the plates, the item bar and the dialogue box at its least height, `Tuning.DIALOGUE_MIN_HEIGHT`)
+## and the separations between the rows have their share. The column is as wide as the board, so
+## the plates and the dialogue line up with its edges, and it is centred.
 func _fit_board() -> void:
 	var gutters := _margin.get_theme_constant("margin_left") + _margin.get_theme_constant("margin_right")
-	var side := maxf(floorf((size.x - gutters) / _BOARD_STEP), 1.0) * _BOARD_STEP
+	var margins := _margin.get_theme_constant("margin_top") + _margin.get_theme_constant("margin_bottom")
+	var rows := 0.0
+	var visible_rows := 0
+	for child: Control in _column.get_children():
+		if child == _board or not child.visible:
+			continue
+		rows += child.get_combined_minimum_size().y
+		visible_rows += 1
+	# With the board there is one row more than the others, so one separation for each other row.
+	rows += visible_rows * _column.get_theme_constant("separation")
+	var across := (size.x - gutters) / _BOARD_STEP
+	var down := (size.y - margins - rows) / _BOARD_STEP
+	var side := maxf(floorf(minf(across, down)) * _BOARD_STEP, Tuning.BOARD_MIN_SIDE)
 	_board.custom_minimum_size = Vector2.ONE * side
 
 
