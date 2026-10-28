@@ -39,10 +39,13 @@ func _show_licences() -> void:
 
 
 ## Everything the app ships, in order: the notice and the GPLv3, the credits, each component of the
-## engine with its licence, and the texts of those licences.
+## engine with its licence, and the texts of those licences. The notice is in the player's language;
+## the licence texts themselves are the official English ones.
 func _licences_text() -> String:
+	var notice := %Notice as Label
 	var parts: PackedStringArray = [
-		(%Notice as Label).text,
+		# The label keeps its English source as `text`; `atr` gives what it shows.
+		notice.atr(notice.text),
 		FileAccess.get_file_as_string(_GPL_PATH),
 		FileAccess.get_file_as_string(_CREDITS_PATH),
 		tr("Components of the Godot Engine"),
@@ -50,7 +53,7 @@ func _licences_text() -> String:
 	for component: Dictionary in Engine.get_copyright_info():
 		var lines: PackedStringArray = [String(component["name"])]
 		for part: Dictionary in component["parts"]:
-			lines.append("  %s\n  %s, licence: %s" % [
+			lines.append(tr("  %s\n  %s, licence: %s") % [
 				", ".join(PackedStringArray(part["files"])), ", ".join(PackedStringArray(part["copyright"])),
 				part["license"]])
 		parts.append("\n".join(lines))

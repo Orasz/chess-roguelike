@@ -1,0 +1,238 @@
+# Italian translation of Chess Roguelike.
+# The English source strings are in messages.pot, which make pot regenerates.
+msgid ""
+msgstr ""
+"Project-Id-Version: Chess Roguelike\n"
+"Language: it\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "  %s\n  %s, licence: %s"
+msgstr "  %s\n  %s, licenza: %s"
+
+msgid "%s attacks! Find the best move."
+msgstr "%s attacca! Trova la mossa migliore."
+
+msgid "%s blocks the way! Convert your advantage within %d moves."
+msgstr "%s ti sbarra la strada! Concretizza il vantaggio entro %d mosse."
+
+msgid "%s escapes!"
+msgstr "%s ti sfugge!"
+
+msgid "About"
+msgstr "Informazioni"
+
+msgid "After %s, %s is checkmate."
+msgstr "Dopo %s, %s è scacco matto."
+
+msgid "After %s, %s wins your %s."
+msgstr "Dopo %s, %s ti prende %s."
+
+msgid "After %s, the best reply is %s."
+msgstr "Dopo %s, la risposta migliore è %s."
+
+msgid "After %s, the opponent has mate in %d."
+msgstr "Dopo %s, l'avversario dà matto in %d."
+
+msgid "Attraction"
+msgstr "Attrazione"
+
+msgid "Back"
+msgstr "Indietro"
+
+msgid "Back to menu"
+msgstr "Torna al menu"
+
+msgid "Back-rank mate"
+msgstr "Matto di corridoio"
+
+msgid "Beginner"
+msgstr "Principiante"
+
+msgid "Cancel"
+msgstr "Annulla"
+
+msgid "Capturing the defender"
+msgstr "Cattura del difensore"
+
+msgid "Chess Roguelike"
+msgstr "Chess Roguelike"
+
+msgid "Chess Roguelike is free software, released under the GNU General Public License version 3. You may share and change it under that licence. It comes with no warranty."
+msgstr "Chess Roguelike è software libero, distribuito secondo la GNU General Public License versione 3. Puoi condividerlo e modificarlo secondo i termini di tale licenza. Viene fornito senza alcuna garanzia."
+
+msgid "Clearance"
+msgstr "Sgombero"
+
+msgid "Club"
+msgstr "Club"
+
+msgid "Components of the Godot Engine"
+msgstr "Componenti del motore Godot"
+
+msgid "Continue"
+msgstr "Continua"
+
+msgid "Correct!"
+msgstr "Corretto!"
+
+msgid "Defeat"
+msgstr "Sconfitta"
+
+msgid "Deflection"
+msgstr "Deviazione"
+
+msgid "Discovered attack"
+msgstr "Attacco di scoperta"
+
+msgid "Double check"
+msgstr "Scacco doppio"
+
+msgid "Exposed king"
+msgstr "Re scoperto"
+
+msgid "Fork"
+msgstr "Forchetta"
+
+msgid "Gatekeeper Rook"
+msgstr "Torre Guardiana"
+
+msgid "Greedy Pawn"
+msgstr "Pedone Ingordo"
+
+msgid "HP %d/%d"
+msgstr "PV %d/%d"
+
+msgid "HP 100/100"
+msgstr "PV 100/100"
+
+msgid "Hanging piece"
+msgstr "Pezzo indifeso"
+
+msgid "Interference"
+msgstr "Interferenza"
+
+msgid "Knight of the Centre"
+msgstr "Cavaliere del Centro"
+
+msgid "Licence texts"
+msgstr "Testi delle licenze"
+
+msgid "Licences"
+msgstr "Licenze"
+
+msgid "Line complete! You played the %s to the end."
+msgstr "Linea completata! Hai giocato la %s fino in fondo."
+
+msgid "Mate in one"
+msgstr "Matto in uno"
+
+msgid "New run"
+msgstr "Nuova avventura"
+
+msgid "Opening Scholar"
+msgstr "Studioso delle Aperture"
+
+msgid "Pin"
+msgstr "Inchiodatura"
+
+msgid "Potion ×%d"
+msgstr "Pozione ×%d"
+
+msgid "Potion ×1"
+msgstr "Pozione ×1"
+
+msgid "Privacy policy"
+msgstr "Informativa sulla privacy"
+
+msgid "Promotion"
+msgstr "Promozione"
+
+msgid "Send feedback"
+msgstr "Invia un feedback"
+
+msgid "Skewer"
+msgstr "Infilata"
+
+msgid "Smothered mate"
+msgstr "Matto affogato"
+
+msgid "Sneaky Bishop"
+msgstr "Alfiere Furtivo"
+
+msgid "Source code"
+msgstr "Codice sorgente"
+
+msgid "Start a new run? Your saved run will be lost."
+msgstr "Iniziare una nuova avventura? Quella salvata andrà persa."
+
+msgid "Start new run"
+msgstr "Inizia una nuova avventura"
+
+msgid "Strong"
+msgstr "Forte"
+
+msgid "That leaves the book."
+msgstr "Questa mossa esce dalla teoria."
+
+msgid "The best move was %s."
+msgstr "La mossa migliore era %s."
+
+msgid "The game data could not be loaded."
+msgstr "Impossibile caricare i dati del gioco."
+
+msgid "The opponent hesitates and withdraws."
+msgstr "L'avversario esita e si ritira."
+
+msgid "Trapped piece"
+msgstr "Pezzo intrappolato"
+
+msgid "Version %s"
+msgstr "Versione %s"
+
+msgid "Victory!"
+msgstr "Vittoria!"
+
+msgid "You"
+msgstr "Tu"
+
+msgctxt "lost piece"
+msgid "bishop"
+msgstr "l'alfiere"
+
+msgctxt "lost piece"
+msgid "knight"
+msgstr "il cavallo"
+
+msgctxt "lost piece"
+msgid "pawn"
+msgstr "il pedone"
+
+msgctxt "lost piece"
+msgid "queen"
+msgstr "la donna"
+
+msgctxt "lost piece"
+msgid "rook"
+msgstr "la torre"
+
+msgctxt "piece letter"
+msgid "B"
+msgstr "A"
+
+msgctxt "piece letter"
+msgid "K"
+msgstr "R"
+
+msgctxt "piece letter"
+msgid "N"
+msgstr "C"
+
+msgctxt "piece letter"
+msgid "Q"
+msgstr "D"
+
+msgctxt "piece letter"
+msgid "R"
+msgstr "T"

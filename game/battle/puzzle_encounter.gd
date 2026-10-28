@@ -88,7 +88,7 @@ func _lose(wrong_uci: String) -> void:
 	var sentence := await _explain(wrong_uci)
 	if not sentence.is_empty():
 		parts.append(sentence)
-	parts.append(tr("The best move was %s.") % ChessRules.san(_start_fen, _moves[1]))
+	parts.append(tr("The best move was %s.") % Notation.display(ChessRules.san(_start_fen, _moves[1])))
 	_say(" ".join(parts))
 	_commit()
 	finished.emit(outcome)

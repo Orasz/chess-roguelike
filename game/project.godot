@@ -26,6 +26,10 @@ window/handheld/orientation=1
 
 theme/custom="res://ui/theme.tres"
 
+[internationalization]
+
+locale/translations=PackedStringArray("res://locale/it.po")
+
 [rendering]
 
 renderer/rendering_method="gl_compatibility"

@@ -103,6 +103,13 @@ PUZZLE_DB := build/lichess_db_puzzle.csv.zst
 
 test-tools:
 	python3 -m unittest discover -s tools -p 'test_*.py'
+	python3 tools/l10n/extract_strings.py game --check game/locale/messages.pot
+
+# The translation template: every string the game shows. Italian is game/locale/it.po, written by hand.
+pot:
+	python3 tools/l10n/extract_strings.py game > game/locale/messages.pot.tmp \
+	&& mv game/locale/messages.pot.tmp game/locale/messages.pot; \
+	status=$$?; rm -f game/locale/messages.pot.tmp; exit $$status
 
 # The strong positions' evaluations come from the game's own engine (the light-net build), at a fixed depth
 # on one thread, so the output is reproducible. The file is written aside and moved only on success.
@@ -134,4 +141,4 @@ check-engine: stockfish-cli
 	if [ "$$nodes" = "$(BENCH_NODES)" ]; then echo "bench: $$nodes nodes, as expected"; \
 	else echo "bench: $${nodes:-no node count} nodes, expected $(BENCH_NODES)"; exit 1; fi
 
-.PHONY: net stockfish-tree stockfish-cli check-engine native-macos native-android apk install logcat import test test-tools legal puzzles strong-sim
+.PHONY: pot net stockfish-tree stockfish-cli check-engine native-macos native-android apk install logcat import test test-tools legal puzzles strong-sim

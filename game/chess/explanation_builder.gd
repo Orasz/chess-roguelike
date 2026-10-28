@@ -48,17 +48,19 @@ static func after_mistake(fen: String, wrong_uci: String, reply: EngineEval) -> 
 	if wrong.is_empty():
 		return ""
 	if reply.is_mate and reply.value > 1:
-		return _translator.tr("After %s, the opponent has mate in %d.") % [wrong, reply.value]
+		return _translator.tr("After %s, the opponent has mate in %d.") % [Notation.display(wrong), reply.value]
 	var best := ""
 	if not reply.pv.is_empty():
 		best = ChessRules.san(ChessRules.fen_after(fen, PackedStringArray([wrong_uci])), reply.pv[0], false)
 	if best.is_empty():
 		return ""
+	wrong = Notation.display(wrong)
+	best = Notation.display(best)
 	if reply.is_mate and reply.value == 1:
 		return _translator.tr("After %s, %s is checkmate.") % [wrong, best]
 	var lost := _lost_piece(fen, wrong_uci, reply.pv)
 	if not lost.is_empty():
-		return _translator.tr("After %s, %s wins your %s.") % [wrong, lost.move, lost.piece]
+		return _translator.tr("After %s, %s wins your %s.") % [wrong, Notation.display(lost.move), lost.piece]
 	return _translator.tr("After %s, the best reply is %s.") % [wrong, best]
 
 
@@ -126,9 +128,9 @@ static func _translated_theme(tag: String) -> String:
 
 static func _translated_piece(letter: String) -> String:
 	match letter:
-		"q": return _translator.tr("queen")
-		"r": return _translator.tr("rook")
-		"b": return _translator.tr("bishop")
-		"n": return _translator.tr("knight")
-		"p": return _translator.tr("pawn")
+		"q": return _translator.tr("queen", "lost piece")
+		"r": return _translator.tr("rook", "lost piece")
+		"b": return _translator.tr("bishop", "lost piece")
+		"n": return _translator.tr("knight", "lost piece")
+		"p": return _translator.tr("pawn", "lost piece")
 	return ""
