@@ -5,13 +5,23 @@ extends SceneTree
 ##
 ##   godot --headless --path game -s res://tools/strong_sim.gd -- --rating 1200 --out ../build/strong-sim-1200.json
 ##
+## Two options: `--player-elo N` swaps the hint policy for a human proxy (below), and `--limit N`
+## plays only the first N positions, for a smoke run.
+##
 ## The enemy plays at `clampi(rating, Tuning.PICKER_MIN_ELO, Tuning.PICKER_MAX_ELO)`, like in a run.
 ## The player plays the encounter's hint whenever it is a legal move, and otherwise the engine's
 ## best move from a full-strength search of `_FALLBACK_SEARCH_MS`, MultiPV 1. The engine is the
 ## script's own: the `ChessEngine` autoload stays stopped, and the encounters and the fallback
 ## searches share this one engine, which the fallback uses only on the player's turn, while the
-## encounter is not searching. Each position has a fixed seed, so the enemy's choices repeat
-## from one run to the next as long as the engine's lines do; a timed search can still vary.
+## encounter is not searching.
+##
+## With `--player-elo N` the player never sees the hint. Whenever it moves it searches the position
+## at full strength, MultiPV `Tuning.STRONG_CANDIDATES`, `_FALLBACK_SEARCH_MS`, and plays the line
+## `MovePicker.choose(lines, N, rng)` picks: a human of that Elo as the game's own enemy model sees
+## one, not a real person. The picks come from a generator seeded with the position's index.
+##
+## Each position has a fixed seed, so the enemy's choices and the picks repeat from one run to the
+## next as long as the engine's lines do; a timed search can still vary.
 
 const _PUZZLES_PATH := "res://data/puzzles/italian_game.json"
 const _FALLBACK_SEARCH_MS := 700
@@ -23,6 +33,10 @@ const _FIRST_SEED := 1
 var _engine: UciEngine
 var _player_turn := false
 var _outcome := -1
+## The Elo of the human proxy, or 0 for the hint policy.
+var _player_elo := 0
+## Draws the human proxy's picks; reseeded for each position.
+var _pick_rng := RandomNumberGenerator.new()
 
 
 func _initialize() -> void:
@@ -36,6 +50,7 @@ func _main() -> void:
 		quit(2)
 		return
 	var rating := int(args["rating"])
+	_player_elo = int(args.get("player-elo", 0))
 	var bank := PuzzleBank.load_file(_PUZZLES_PATH)
 	if bank == null or bank.strong.is_empty():
 		printerr("strong_sim: no strong positions in %s" % _PUZZLES_PATH)
@@ -48,25 +63,29 @@ func _main() -> void:
 		quit(1)
 		return
 	var enemy_elo := clampi(rating, Tuning.PICKER_MIN_ELO, Tuning.PICKER_MAX_ELO)
-	print("strong_sim: %d positions, rating %d, enemy Elo %d, %s" % [bank.strong.size(), rating, enemy_elo,
-		_constants()])
+	var total := bank.strong.size()
+	if args.has("limit"):
+		total = mini(total, int(args["limit"]))
+	print("strong_sim: %d positions, rating %d, enemy Elo %d, player %s, %s" % [total, rating, enemy_elo,
+		"Elo %d" % _player_elo if _player_elo > 0 else "follows the hint", _constants()])
 	var results: Array = []
-	for i in bank.strong.size():
+	for i in total:
 		var record: Dictionary = bank.strong[i]
+		_pick_rng.seed = i
 		var result := await _play(record, RunState.create(_FIRST_SEED + i, rating, "italian_game"), enemy_elo)
 		if result.is_empty():
-			printerr("strong_sim: the fallback search failed on %s" % record["id"])
+			printerr("strong_sim: the player's search failed on %s" % record["id"])
 			_engine.shutdown()
 			quit(1)
 			return
 		results.append(result)
-		print("[%d/%d] %s: %s after %d moves, %d HP lost" % [i + 1, bank.strong.size(), result["id"],
+		print("[%d/%d] %s: %s after %d moves, %d HP lost" % [i + 1, total, result["id"],
 			RunState.Outcome.keys()[result["outcome"]], result["player_moves"], result["hp_lost"]])
 	_engine.shutdown()
 	var summary := StrongSimSummary.summarize(results)
 	print("strong_sim: summary ", JSON.stringify(summary))
 	var report := {"date": Time.get_date_string_from_system(), "rating": rating, "enemy_elo": enemy_elo,
-		"constants": _constants(), "summary": summary, "results": results}
+		"player_elo": _player_elo, "constants": _constants(), "summary": summary, "results": results}
 	if not _write(String(args["out"]), report):
 		quit(1)
 		return
@@ -105,25 +124,46 @@ func _play(record: Dictionary, run: RunState, enemy_elo: int) -> Dictionary:
 	return {} if failed else result
 
 
-## The hint when it is legal, and otherwise the engine's best move. "" when the search failed.
+## The player's move: the human proxy's pick when `_player_elo` is set, and otherwise the hint when
+## it is legal, and the engine's best move when it is not. "" when a search failed.
 func _player_move(record: Dictionary, enc: StrongEncounter) -> String:
+	if _player_elo > 0:
+		return await _human_move(record, enc)
 	var hint := String(enc.snapshot()["hint"])
 	if ChessRules.inspect(enc.current_fen()).get("legal", PackedStringArray()).has(hint):
 		return hint
-	if not _engine.is_ready() or not _engine.set_full_strength() or _engine.set_multipv(1) < 0:
+	return String((await _search(record, enc, 1))["move"])
+
+
+## The line of the engine's `Tuning.STRONG_CANDIDATES` best that `MovePicker` picks at the proxy's Elo.
+func _human_move(record: Dictionary, enc: StrongEncounter) -> String:
+	var lines: Array = (await _search(record, enc, Tuning.STRONG_CANDIDATES))["lines"]
+	if lines.is_empty():
 		return ""
+	var pick: EngineEval = lines[MovePicker.choose(lines, _player_elo, _pick_rng)]
+	return pick.pv[0] if not pick.pv.is_empty() else ""
+
+
+## Searches the encounter's current position at full strength with `multipv` lines, and returns them
+## ordered by index, and the engine's best move, as `{move, lines}`; both are empty when the search failed.
+func _search(record: Dictionary, enc: StrongEncounter, multipv: int) -> Dictionary:
+	var failed := {"move": "", "lines": []}
+	if not _engine.is_ready() or not _engine.set_full_strength() or _engine.set_multipv(multipv) < 0:
+		return failed
 	if not _engine.set_position(String(record["fen"]), enc.moves) or not _engine.go_movetime(_FALLBACK_SEARCH_MS):
-		return ""
-	var best := [""]
-	var on_best := func(move: String) -> void: best[0] = move
-	_engine.best_move.connect(on_best, CONNECT_ONE_SHOT)
+		return failed
+	var found := [failed, false]
+	var on_done := func(move: String, lines: Array) -> void:
+		found[0] = {"move": move, "lines": lines}
+		found[1] = true
+	_engine.search_finished.connect(on_done, CONNECT_ONE_SHOT)
 	var waited := 0.0
-	while best[0].is_empty() and waited < _ENGINE_WAIT_S:
+	while not found[1] and waited < _ENGINE_WAIT_S:
 		await process_frame
 		waited += root.get_process_delta_time()
-	if _engine.best_move.is_connected(on_best):
-		_engine.best_move.disconnect(on_best)
-	return best[0]
+	if _engine.search_finished.is_connected(on_done):
+		_engine.search_finished.disconnect(on_done)
+	return found[0]
 
 
 func _on_input_enabled(on: bool) -> void:

@@ -213,11 +213,16 @@ puzzles: $(PUZZLE_DB) $(SF_OUT)/stockfish
 # Plays every strong position against the game's own engine, with a player who follows the hint, and
 # prints how many it wins and how fast: the measure that tunes the strong enemy's win condition (see
 # docs/research/2026-10-28-strong-tuning.md). It takes about 20 minutes. RATING sets the enemy's Elo.
+# With PLAYER_ELO=N the player ignores the hint and plays like a human of that Elo instead (a MovePicker
+# over the engine's best lines), for example `make strong-sim RATING=1200 PLAYER_ELO=1200`.
 RATING ?= 1200
+PLAYER_ELO ?=
 
 strong-sim: native-macos import
 	mkdir -p build
-	$(GODOT) --headless --path game -s res://tools/strong_sim.gd -- --rating $(RATING) --out ../build/strong-sim-$(RATING).json
+	$(GODOT) --headless --path game -s res://tools/strong_sim.gd -- --rating $(RATING) \
+		$(if $(PLAYER_ELO),--player-elo $(PLAYER_ELO)) \
+		--out ../build/strong-sim-$(RATING)$(if $(PLAYER_ELO),-player$(PLAYER_ELO)).json
 
 # The patched tree must reproduce the node count of the patch's own commit (2793281 for sf_19 plus the
 # light-net patch), so a rebase onto a new Stockfish release is caught here. Stockfish prints the
