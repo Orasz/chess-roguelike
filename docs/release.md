@@ -92,7 +92,9 @@ exist. It builds the release engine library (`make native-android-release`) firs
 3. every `base/lib/arm64-v8a/*.so` has only LOAD segments with `align 2**14` (16 KB), read with the NDK's
    `llvm-objdump -p`;
 4. the manifest has the Play id, the `versionCode` of the preset, `minSdkVersion` 24, `targetSdkVersion` 36 and
-   no `uses-permission`.
+   no `uses-permission`;
+5. the manifest sets `android:allowBackup="false"` (PRIVACY.md relies on it) and has no `android:debuggable` set
+   to true.
 
 `make install-aab` asks bundletool for the APKs of the connected phone and installs them: the same split APKs
 a download from Play gives, unlike `make install`. They are signed with bundletool's default **debug key**,
@@ -107,6 +109,19 @@ Play Console, your app, **Test and release**, then the track (closed testing for
 release**: upload the `.aab` and accept Play App Signing when it asks (the first upload enrolls the app). The
 upload key's certificate is registered from that first upload. The application id is permanent from then on.
 
+## Tag every upload
+
+The bundle is GPLv3, so the Corresponding Source of each binary that leaves the machine must be identifiable.
+After each upload, tag the commit that built it as `v<version name>-<version code>` and push the tag, with
+the author's approval (it is a push):
+
+```bash
+git tag v0.1.0-1 <commit that built the bundle>
+git push origin v0.1.0-1
+```
+
+Every `versionCode` that reaches Play has its own tag, even a closed-test or internal one.
+
 ## The next release
 
 Play refuses an upload whose `versionCode` is not higher than every earlier one. In `game/export_presets.cfg`,
@@ -117,7 +132,7 @@ section `[preset.1.options]` of the "Android Play" preset:
 
 The bundle's file name, the build and `make check-aab` all read these two values from the preset, so nothing else
 needs editing. The preset's `export_path` is only the default of Godot's editor; update it too if you export from
-the editor. Run `make aab` and `make check-aab` again before each upload.
+the editor. Run `make aab` and `make check-aab` again before each upload, then tag the upload as above.
 
 ## Building behind a TLS-intercepting proxy
 
