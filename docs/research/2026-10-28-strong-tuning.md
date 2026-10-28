@@ -17,11 +17,13 @@
   and the medians are 5.5, 6 and 6 moves.
 
 The simulated player is the engine following its own hint. So 0.80 is a ceiling for human play, not an estimate of it.
+The [human-proxy runs](#human-proxy-runs) at the end measure one step closer to a person.
 
 ## How the runs were made
 
 `make strong-sim RATING=<rating>` runs `game/tools/strong_sim.gd` headless. It writes every position's result to
-`build/strong-sim-<rating>.json`, and copies of the runs below are in [`data/`](data/).
+`build/strong-sim-<rating>.json`, and copies of the runs below are in [`data/`](data/). With `PLAYER_ELO=<elo>` the
+file is `build/strong-sim-<rating>-player<elo>.json`.
 
 - **Engine.** The game's own engine: the light-net build of decision
   [0003](../decisions/0003-engine-net.md), as a macOS GDExtension, on one thread with a 16 MB hash. Its centipawns read
@@ -97,3 +99,46 @@ at +300 cp, so its target is the 500 cp floor:
 - +500 wins before the enemy moves (`test_reaching_the_target_wins`).
 
 `game/test/unit/test_hp_model.gd` checks `decisive_cp`, `enemy_fraction` and `is_decisive` with the same constants.
+
+## Human-proxy runs
+
+The runs above let the engine play the player, with the hint. These two do not.
+
+- **What the simulated player is.** A `MovePicker` at the player's Elo over the engine's 5 best lines (MultiPV 5, 700 ms,
+  full strength), the same softmax that makes the enemy weak. It is a model of a human of that Elo, **not a real
+  person**.
+- **What it does not get.** It never sees the hint. Each of its moves is a fresh pick, with a random generator seeded
+  with the position's index so the picks repeat.
+- **What the numbers are.** Indications for the closed test, **not acceptance criteria**. No `Tuning` constant changed
+  after them, and the plan's 0.80 bar still belongs to the hint-policy runs above.
+
+`make strong-sim RATING=1200 PLAYER_ELO=1200` and `make strong-sim RATING=800 PLAYER_ELO=800` ran at the constants in
+the table above, `DECISIVE_GAIN_CP = 150` and `DECISIVE_MIN_CP = 500`. The enemy plays at the rating, like in a run: a
+Beginner-preset player (800) meets an enemy at 800 and a Club player (1200) one at 1200.
+
+| # | Date | Rating (enemy Elo) | Player Elo | count | won_share | median_moves_to_win | mean_hp_lost | Escapes | Mates or draws | Data |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 7 | 2026-10-28 | 1200 | 1200 | 75 | 0.613 (46) | 5.5 | 8.36 | 29 | 0 | [run 7](data/strong-sim-run7-1200-player1200.json) |
+| 8 | 2026-10-28 | 800 | 800 | 75 | 0.640 (48) | 5.0 | 9.08 | 27 | 0 | [run 8](data/strong-sim-run8-800-player800.json) |
+
+For comparison, the hint policy at 1200 won 0.853 of the positions over runs 3, 5 and 6, with a mean of 1.68 to 3.00 HP
+lost.
+
+### What they suggest
+
+- **A Club player is likely to beat the strong enemy in about six battles out of ten.** Run 7 won 46 of 75. At 800, run
+  8 won 48 of 75. The difference between the two is two positions, inside the noise that the earlier runs showed.
+- **Almost every battle that is not won is an escape.** All 29 and 27 of them ran out of the 12 moves; there was no
+  mate against the player and no draw. When the player does win, it is quick: the median is 5.5 and 5.0 moves, and
+  the slowest win took all 12.
+- **The cost is the escape.** An escape costs 15 HP, and the lost battles lost 20.6 HP (run 7) and 23.6 HP (run 8) on
+  average, so the extra over 15 is move damage taken before the enemy got away. A won battle cost 0.63 and 0.90 HP on
+  average. The worst single battle cost 50 HP (run 7) and 55 HP (run 8) of the 100, so none ended the run alone.
+  - The mean over all positions is 8.4 and 9.1 HP per strong battle, against 1.7 to 3.0 for the hint policy.
+- **Below the hint policy, as expected.** The hint policy is the engine's own best move every turn, and a human of 1200
+  or 800 is not. What the closed test can tell is whether real players behave nearer 0.61 or nearer 0.85.
+- **Noise.** A first pass of the same two commands, made before the tool wrote `player_elo` into its report and so not
+  kept as data, gave 0.587 and 0.653: about two positions away from runs 7 and 8.
+
+For the testers, the open questions are how often the enemy escaped and whether the "Moves left" counter was enough to
+see it coming. The closed-test plan asks them (Task 14, Step 2).
