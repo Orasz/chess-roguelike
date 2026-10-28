@@ -39,6 +39,22 @@ import:
 		|| echo 'res://bin/stockfish_gd.gdextension' >> game/.godot/extension_list.cfg
 	$(GODOT) --headless --path game --import
 
+# A desktop Stockfish for the offline tools, built out of tree so that the Stockfish checkout
+# stays untouched. SF_TREE is a Stockfish checkout (the submodule, or a patched copy of it): the
+# net its evaluate.h names is taken from native/ and embedded. SF_OUT receives the binary.
+SF_TREE ?= native/thirdparty/Stockfish
+SF_OUT ?= build/stockfish
+
+stockfish-cli: net
+	@set -e; \
+	name=$$(grep -oE 'nn-[0-9a-f]{12}\.nnue' $(SF_TREE)/src/evaluate.h | head -1); \
+	test -f native/$$name || { echo "native/$$name is missing: copy the net that $(SF_TREE) embeds there"; exit 1; }; \
+	mkdir -p $(SF_OUT)/tree; \
+	rsync -a --delete --exclude='.git' --exclude='*.o' --exclude='*.os' --exclude='*.nnue' $(SF_TREE)/ $(SF_OUT)/tree/; \
+	cp native/$$name $(SF_OUT)/tree/src/$$name; \
+	$(MAKE) -C $(SF_OUT)/tree/src -j $$(sysctl -n hw.ncpu) build ARCH=apple-silicon; \
+	cp $(SF_OUT)/tree/src/stockfish $(SF_OUT)/stockfish
+
 test: test-tools native-macos import
 	scripts/run_tests.sh "$(GODOT)"
 
@@ -52,4 +68,4 @@ test-tools:
 puzzles: $(PUZZLE_DB)
 	zstd -dc $(PUZZLE_DB) | python3 tools/puzzles/build_subset.py --opening Italian_Game --side white > game/data/puzzles/italian_game.json
 
-.PHONY: net native-macos native-android apk install logcat import test test-tools puzzles
+.PHONY: net stockfish-cli native-macos native-android apk install logcat import test test-tools puzzles

@@ -1,9 +1,18 @@
 #!/usr/bin/env python
 import os
+import re
 
 LIB = "stockfish_gd"
-SF = "thirdparty/Stockfish/src"   # submodule at sf_19; NOT added to CPPPATH (its memory.h would shadow <memory.h>)
-NET = "nn-1a298aa575a0.nnue"      # INCBIN resolves it from the compiler's cwd = this directory
+# Both can be overridden on the command line (sf_dir=../build/stockfish-light/src net=nn-61e7af4bb97d.nnue)
+# to build another Stockfish tree. They are popped so that godot-cpp does not warn about unknown variables.
+SF = ARGUMENTS.pop("sf_dir", "thirdparty/Stockfish/src")  # submodule at sf_19; NOT added to CPPPATH (its memory.h would shadow <memory.h>)
+NET = ARGUMENTS.pop("net", "nn-1a298aa575a0.nnue")        # INCBIN resolves it from the compiler's cwd = this directory
+
+with open(os.path.join(SF, "evaluate.h")) as f:
+    tree_net = re.search(r'#define\s+EvalFileDefaultName\s+"([^"]+)"', f.read()).group(1)
+if tree_net != NET:
+    print("{}/evaluate.h embeds {}, not {}: pass net={}".format(SF, tree_net, NET, tree_net))
+    Exit(1)
 
 env = SConscript("godot-cpp/SConstruct", {"api_version": "4.7"})
 if env["platform"] == "macos" and env["arch"] != "arm64":
