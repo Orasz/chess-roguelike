@@ -1,7 +1,7 @@
 extends SceneTree
 ## Draws the Google Play feature graphic, 1024x500 px, from the game's own art (see CREDITS.md): a
 ## fragment of the Italian Game on a board, a strip of the overworld, a portrait of the gate's enemy,
-## and the title. It reads the CC0 chess pieces and the CC0 Ninja Adventure tiles and portraits, and
+## and the title. It shows no human character, so that nothing in it can read as aimed at children. It reads the CC0 chess pieces and the CC0 Ninja Adventure tiles and portraits, and
 ## writes a 24-bit PNG with no alpha channel, as Play requires:
 ##
 ##   godot --headless --path game -s res://tools/make_store_art.gd
@@ -15,7 +15,6 @@ extends SceneTree
 const _PIECES := "res://assets/chess_pieces/%s.png"
 const _FLOOR := "res://assets/ninja_adventure/tilesets/floor.png"
 const _NATURE := "res://assets/ninja_adventure/tilesets/nature.png"
-const _WALK := "res://assets/ninja_adventure/characters/boy_walk.png"
 const _ENEMY := "res://assets/ninja_adventure/bosses/demon_cyclop.png"
 ## The feature graphic sits outside the Godot project, in the repository's `store/` folder.
 const _OUTPUT := "../store/graphics/feature_1024x500.png"
@@ -34,7 +33,9 @@ const _GRASS_DASHES := Vector2i(4, 12)
 const _PATH := Vector2i(6, 11)
 const _PINE: Array[Vector2i] = [Vector2i(2, 0), Vector2i(3, 0), Vector2i(2, 1), Vector2i(3, 1)]
 const _TALL_GRASS: Array[Vector2i] = [Vector2i(4, 10), Vector2i(5, 10)]
-## The row of the map that the path runs along, in cells of 64 px from the top.
+## The cells of 64 px are counted from `_GRID_TOP`, a little below the canvas's top edge, so that the board
+## and the path, which share the grid, clear the title's plate. The row of the map that the path runs along.
+const _GRID_TOP := 20
 const _PATH_ROW := 6
 
 ## The board's squares are those of `BoardView`.
@@ -46,7 +47,7 @@ const _FILES_FROM := 2
 const _FILES_COUNT := 5
 const _RANKS_TOP := 6
 const _RANKS_COUNT := 4
-const _BOARD_ORIGIN := Vector2i(64, 128)
+const _BOARD_ORIGIN := Vector2i(64, _GRID_TOP + 2 * _CELL)
 const _POSITION: Array[Array] = [
 	["c", 6, "black_knight"], ["c", 5, "black_bishop"], ["e", 5, "black_pawn"],
 	["c", 4, "white_bishop"], ["e", 4, "white_pawn"], ["f", 3, "white_knight"],
@@ -62,11 +63,13 @@ const _TITLE_TOP := 12
 const _NAME := "Gatekeeper Rook"
 const _NAME_SIZE := 24
 const _PORTRAIT_SCALE := 6
-const _ENEMY_ORIGIN := Vector2i(740, 132)
+const _ENEMY_ORIGIN := Vector2i(740, _GRID_TOP + 2 * _CELL)
 
 var _pieces := {}
 var _floor: Image
 var _nature: Image
+## The outer rectangle of every plate drawn, so that the script can check that none touches another.
+var _plates: Array[Rect2i] = []
 
 
 func _initialize() -> void:
@@ -74,13 +77,12 @@ func _initialize() -> void:
 
 
 func _main() -> void:
-	var walk := _load(_WALK)
 	var enemy := _load(_ENEMY)
 	_floor = _load(_FLOOR)
 	_nature = _load(_NATURE)
 	for name in ["black_knight", "black_bishop", "black_pawn", "white_bishop", "white_pawn", "white_knight"]:
 		_pieces[name] = _load(_PIECES % name)
-	if walk == null or enemy == null or _floor == null or _nature == null or _pieces.values().has(null):
+	if enemy == null or _floor == null or _nature == null or _pieces.values().has(null):
 		printerr("make_store_art: cannot read the game's art")
 		quit(1)
 		return
@@ -88,26 +90,25 @@ func _main() -> void:
 	_paint_lawn(image)
 	_paint_path(image)
 	_paint_scenery(image)
-	_paint_walker(image, walk)
 	_paint_board(image)
 	_paint_enemy(image, enemy)
 	_paint_title(image)
 	image.convert(Image.FORMAT_RGB8)
-	quit(0 if _save(image, _OUTPUT) else 1)
+	quit(0 if _plates_are_apart() and _save(image, _OUTPUT) else 1)
 
 
 ## Grass over the whole canvas, on the same 64 px grid as the rest, with the blades on a fixed pattern.
 func _paint_lawn(image: Image) -> void:
 	var tiles: Array[Vector2i] = [_GRASS, _GRASS_SPROUTS, _GRASS, _GRASS_DASHES]
-	for row in range(ceili(float(_HEIGHT) / _CELL)):
+	for row in range(-1, ceili(float(_HEIGHT - _GRID_TOP) / _CELL)):
 		for column in range(_WIDTH / _CELL):
-			_stamp(image, _floor, tiles[(column + 2 * row) % tiles.size()], Vector2i(column, row) * _CELL)
+			_stamp(image, _floor, tiles[posmod(column + 2 * row, tiles.size())], _cell(column, row))
 
 
 ## The path that runs along the foot of the board and the portrait, edge to edge.
 func _paint_path(image: Image) -> void:
 	for column in range(_WIDTH / _CELL):
-		_stamp(image, _floor, _PATH, Vector2i(column, _PATH_ROW) * _CELL)
+		_stamp(image, _floor, _PATH, _cell(column, _PATH_ROW))
 
 
 ## Two pines and some tall grass between the board and the portrait, on the grass above the path.
@@ -115,14 +116,14 @@ func _paint_scenery(image: Image) -> void:
 	for origin in [Vector2i(7, 3), Vector2i(9, 3)]:
 		for quarter in 4:
 			var offset := Vector2i(quarter % 2, quarter / 2)
-			_stamp(image, _nature, _PINE[quarter], (origin + offset) * _CELL)
+			_stamp(image, _nature, _PINE[quarter], _cell(origin.x + offset.x, origin.y + offset.y))
 	for column in [6, 8, 10]:
-		_stamp(image, _nature, _TALL_GRASS[column % 2], Vector2i(column, 5) * _CELL)
+		_stamp(image, _nature, _TALL_GRASS[column % 2], _cell(column, 5))
 
 
-## The player on the path, mid-stride and facing right: column 3 and row 1 of the walking sheet.
-func _paint_walker(image: Image, walk: Image) -> void:
-	_stamp(image, walk, Vector2i(3, 1), Vector2i(8, _PATH_ROW) * _CELL)
+## The top left corner, in pixels, of the cell at `column` and `row` of the map's grid.
+func _cell(column: int, row: int) -> Vector2i:
+	return Vector2i(column * _CELL, _GRID_TOP + row * _CELL)
 
 
 func _paint_board(image: Image) -> void:
@@ -164,9 +165,25 @@ func _paint_title(image: Image) -> void:
 ## outside of it. The margin is drawn outside `inner`, which the caller fills.
 func _paint_plate(image: Image, inner: Rect2i, margin: int) -> void:
 	var outer := inner.grow(margin)
+	_plates.append(outer)
 	image.fill_rect(outer, _PLATE_BORDER)
 	image.fill_rect(outer.grow(-_PLATE_BORDER_PX), _PLATE)
 	image.fill_rect(inner, _PLATE)
+
+
+## Whether every plate lies inside the canvas and clear of the others, with the rectangles printed.
+func _plates_are_apart() -> bool:
+	var canvas := Rect2i(0, 0, _WIDTH, _HEIGHT)
+	var ok := true
+	for i in _plates.size():
+		print("make_store_art: plate %d is %s" % [i, _plates[i]])
+		ok = canvas.encloses(_plates[i]) and ok
+		for j in range(i + 1, _plates.size()):
+			if _plates[i].intersects(_plates[j]):
+				ok = false
+	if not ok:
+		printerr("make_store_art: a plate leaves the canvas or touches another")
+	return ok
 
 
 ## Paints tile `cell` (column, row) of the atlas `source` at `position`, scaled to a 64 px cell.

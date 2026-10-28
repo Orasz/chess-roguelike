@@ -100,10 +100,29 @@ class ListingTextsTest(unittest.TestCase):
 
     def test_listings_carry_no_donation_link(self):
         for locale in LOCALES:
+            for name in ["title.txt", "short_description.txt", "full_description.txt"]:
+                with self.subTest(locale=locale, name=name):
+                    text = read_text(locale, name).lower()
+                    for word in ["donat", "sponsor", "ko-fi", "patreon", "paypal", "dona "]:
+                        self.assertNotIn(word, text)
+
+    def test_a_single_potion_claim_is_not_made_without_the_drops(self):
+        # A run starts with one potion, holds up to three, and a won battle can drop another: saying "one
+        # potion" alone was false once. The claim must come with the drops.
+        claims = {"en-US": ("one potion", "drop"), "it-IT": ("una pozione", "lascia")}
+        for locale, (claim, drops) in claims.items():
             with self.subTest(locale=locale):
                 text = read_text(locale, "full_description.txt").lower()
-                for word in ["donat", "sponsor", "ko-fi", "patreon", "paypal", "dona "]:
-                    self.assertNotIn(word, text)
+                if claim in text:
+                    self.assertIn(drops, text)
+
+    def test_full_description_headings_are_not_in_capitals(self):
+        # Play's metadata policy bans excessive capitals.
+        for locale in LOCALES:
+            with self.subTest(locale=locale):
+                for line in read_text(locale, "full_description.txt").splitlines():
+                    letters = [char for char in line if char.isalpha()]
+                    self.assertFalse(len(letters) > 3 and all(char.isupper() for char in letters), line)
 
 
 class ListingGraphicsTest(unittest.TestCase):

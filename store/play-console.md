@@ -71,6 +71,8 @@ it in a private window before saving, to check that it loads.
 | Digital purchases | No | There are no purchases |
 | Access to the web | Check the exact wording in the console | The About screen has three fixed links (the source code, the privacy policy and the feedback page) that open the phone's browser. The app itself has no network access and no browser inside it. Answer by the questionnaire's own definition |
 
+- [ ] If the questionnaire asks about **fantasy or cartoon violence**, answer by its own definition: the game has
+  monsters and HP loss, and no blood or realistic violence.
 - [ ] **The rating the console computes is the source of truth.** Do not change an honest answer to get a
   different rating. If the result looks wrong, re-read the question it came from.
 
@@ -81,8 +83,9 @@ it in a private window before saving, to check that it loads.
     Families program (the console does not say whether 13-15 or 16-17 pulls an app in). Revisit it for production.
 - [ ] **Store presence, appeal to children** (the console asks this for an app whose art could attract
   children; check the exact wording in the console): answer **No**. The game is meant for adult chess players and the
-  store art is plain pixel art with no child-oriented characters. If the question's own definition of "appeals to
-  children" fits the art better than this file assumes, answer by it, truthfully.
+  store art is pixel art: chess pieces, a board and an enemy portrait. Judge by the console's own definition of
+  child-appealing content, and answer by it, truthfully. The risk is acknowledged: pixel-art monsters can read as
+  youthful (research §1.6), so keep any new store art free of young characters.
 - [ ] **Restrict Minor Access** (18+ only, optional; check the exact wording in the console). It blocks
   Google-determined minors from finding or installing the app. It matches the audience, but it is not required:
   the author decides.
@@ -167,7 +170,8 @@ Production access for a new personal account needs a closed test with at least *
 continuous days** (research §1.4). The 12 testers must not also be internal testers. After the 14 days, the
 Dashboard offers "Apply for production", with a short questionnaire. The console's questions are not known
 here, so the headings below are the topics the questionnaire is expected to cover: **check the exact wording in
-the console** and use the drafts as the starting point of each answer.
+the console** and use the drafts as the starting point of each answer. The drafts describe the build as it is today: **keep only
+what is true at the time you submit**, and cut or change any sentence that no longer is.
 
 ### About the app
 
@@ -183,7 +187,7 @@ the console** and use the drafts as the starting point of each answer.
 - [ ] **How does the app provide value to users?**
 
   > It makes chess practice into a small adventure: the player trains tactics and opening theory in a run with HP,
-  > a potion and a map, and every wrong move is explained with an arrow and a sentence, so each mistake teaches
+  > potions and a map, and every wrong move is explained with an arrow and a sentence, so each mistake teaches
   > something.
 
 - [ ] **Expected installs** (an estimate: change it if the author knows better)
