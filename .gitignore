@@ -9,3 +9,5 @@ native/*.nnue
 *.o
 .sconsign.dblite
 __pycache__/
+# The global macOS "Icon" ignore also matches the icon folder on a case-insensitive disk.
+!/game/assets/icon/

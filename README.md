@@ -85,6 +85,6 @@ Then use these `make` targets:
 | Target | What it does |
 |---|---|
 | `make native-android` | Builds the arm64 GDExtension |
-| `make apk` | Exports `build/slice.apk` (debug) |
+| `make apk` | Exports the "Android Dev" preset, `build/chess-roguelike-dev.apk` (debug, id `io.github.orasz.chessroguelike.dev`) |
 | `make install` | Installs it on the USB-connected phone |
 | `make logcat` | Follows Godot's log on the phone |

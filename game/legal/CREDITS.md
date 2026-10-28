@@ -65,6 +65,7 @@ Everything the repository ships that someone else made, with its licence.
 - **Pixel Chess Pieces** by SpicyGame (CC0 1.0), from <https://spicygame.itch.io/chess-pieces>.
   Used in the board view: the twelve `color` pieces, `game/assets/chess_pieces/{white,black}_{pawn,knight,bishop,rook,queen,king}.png`.
   The licence note is in [`game/assets/chess_pieces/LICENSE.md`](game/assets/chess_pieces/LICENSE.md).
+  The white knight is also the game's icon, see below.
 
 - **Ninja Adventure Asset Pack** by pixel-boy (CC0 1.0), from <https://pixel-boy.itch.io/ninja-adventure-asset-pack>.
   Used for the portraits on the battle screen: six of the pack's `Faceset.png` images (38x38 px),
@@ -84,3 +85,8 @@ Everything the repository ships that someone else made, with its licence.
   - `tilesets/nature.png`, from `Backgrounds/Tilesets/TilesetNature.png`: the trees and tall grass.
   - `tilesets/water.png`, from `Backgrounds/Tilesets/TilesetWater.png`: the water and the bridge planks.
   - `tilesets/house.png`, from `Backgrounds/Tilesets/TilesetHouse.png`: the door of the gate.
+
+- **The game's icon** (`game/assets/icon/` and `store/graphics/icon_512.png`): drawn by
+  `game/tools/make_icons.gd` from two of the pieces above, so it carries the same licences (CC0 1.0): the
+  white knight of Pixel Chess Pieces (`white_knight.png`), over grass tiles of the Ninja Adventure pack
+  (`tilesets/floor.png`, the plain grass and the two with blades). Both are scaled by an integer factor.

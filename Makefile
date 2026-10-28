@@ -56,10 +56,10 @@ native-android: net stockfish-tree
 
 apk: native-android import
 	mkdir -p build
-	$(GODOT) --headless --path game --export-debug "Android" ../build/slice.apk
+	$(GODOT) --headless --path game --export-debug "Android Dev" ../build/chess-roguelike-dev.apk
 
 install: apk
-	$(ADB) install -r build/slice.apk
+	$(ADB) install -r build/chess-roguelike-dev.apk
 
 logcat:
 	$(ADB) logcat -s godot
