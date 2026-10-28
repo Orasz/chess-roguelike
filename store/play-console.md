@@ -86,6 +86,12 @@ it in a private window before saving, to check that it loads.
   store art is pixel art: chess pieces, a board and an enemy portrait. Judge by the console's own definition of
   child-appealing content, and answer by it, truthfully. The risk is acknowledged: pixel-art monsters can read as
   youthful (research §1.6), so keep any new store art free of young characters.
+  - **The in-game hero is a young-looking sprite.** The player's character on the map and in the battle portrait
+    is the "Boy" of the Ninja Adventure pack (`game/assets/ninja_adventure/characters/boy.png` and `boy_walk.png`,
+    CC0). The author decided on 2026-10-28 to keep it. The store graphics show no human character, so the sprite
+    appears only inside the game. If Google asks for changes (for example, if the review reads it as aimed at
+    children), the sprite is swapped: replace those two files and update the entries in `CREDITS.md`, then run
+    `make legal`.
 - [ ] **Restrict Minor Access** (18+ only, optional; check the exact wording in the console). It blocks
   Google-determined minors from finding or installing the app. It matches the audience, but it is not required:
   the author decides.

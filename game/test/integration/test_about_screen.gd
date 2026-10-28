@@ -75,6 +75,17 @@ func test_licences_hold_the_licence_texts_of_the_engine():
 	assert_string_contains(text, String(licences.values()[0]).strip_edges().left(200))
 
 
+func test_licences_hold_the_apache_licence_the_android_libraries_need():
+	# CREDITS.md lists AndroidX and Kotlin (Apache-2.0) as bundled by the export template, and says that the
+	# licence text is in this screen: Apache-2.0 section 4(a) asks that recipients get it.
+	var text := _show_licences()
+	var licences: Dictionary = Engine.get_license_info()
+	assert_true(licences.has("Apache-2.0"), "the engine must hold the Apache-2.0 text")
+	assert_string_contains(text, "Apache-2.0\n\n" + String(licences["Apache-2.0"]).strip_edges().left(200))
+	assert_string_contains(text, "Version 2.0, January 2004")
+	assert_string_contains(text, "Licence texts")
+
+
 func test_licences_come_in_order():
 	var text := _show_licences()
 	var notice := text.find("GNU General Public License")

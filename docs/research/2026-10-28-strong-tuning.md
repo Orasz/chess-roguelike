@@ -72,8 +72,10 @@ Each run takes 7 to 10 minutes on an Apple-silicon Mac. The won count is in brac
 
 - **Every position that was not won was an escape.** The move limit ran out on every one of them. No run had a mate
   against the player, a draw, or a withdrawal.
-- **The HP lost comes from the escape alone.** Every escape costs `STRONG_FAIL_DAMAGE` = 15 HP, and every won position
-  cost 0 HP. With the 5-point dead zone, a player who follows the hint is never charged for engine noise.
+- **The HP lost comes from the escape, with two exceptions.** An escape costs `STRONG_FAIL_DAMAGE` = 15 HP, and
+  every won position cost 0 HP. In all six runs only two escapes cost more: one in run 2 and one in run 5 cost 21 HP,
+  the 15 HP of the escape plus 6 HP of move damage earlier in the same battle. With the 5-point dead zone, a player
+  who follows the hint is never charged for engine noise.
 - **Runs are noisy, more than one run can resolve.**
   - The three runs at the same constants won 60, 67 and 65 positions.
   - 22 different positions escaped at least once, and only 4 escaped in all three runs.

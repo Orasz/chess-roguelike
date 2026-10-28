@@ -7,7 +7,7 @@ La beta ha una sola zona e una sola apertura, la Partita Italiana, che giochi co
 
 Tre tipi di nemico
 - Problema: un problema tattico preso dal database dei problemi di Lichess. Trova la mossa vincente, oppure una qualsiasi mossa che dia scacco matto. Una mossa sbagliata ti costa PV, e il gioco te la spiega con una freccia e una frase.
-- Apertura: uno scontro sulla teoria della Partita Italiana. Devi giocare le mosse da manuale, e ognuna arriva con l'idea che c'è dietro. Una mossa fuori teoria viene ritirata e spiegata.
+- Apertura: uno scontro sulla teoria della Partita Italiana. Devi giocare le mosse da manuale, e ogni tua mossa di teoria arriva con l'idea che c'è dietro. Una mossa fuori teoria viene ritirata e spiegata.
 - Nemico forte: parti con un vantaggio netto e devi costruirne uno decisivo entro un numero limitato di mosse. Gli errori ti costano PV in proporzione al vantaggio che butti via, e la barra del nemico ti dice a che punto sei. Se finiscono le mosse, il nemico ti sfugge.
 
 La tua avventura

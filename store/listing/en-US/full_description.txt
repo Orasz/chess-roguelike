@@ -7,7 +7,7 @@ The beta has one zone and one opening, the Italian Game, which you play as White
 
 Three kinds of enemy
 - Puzzle: a tactical puzzle from the Lichess puzzle database. Find the winning move, or any move that gives checkmate. A wrong move costs HP, and the game explains it with an arrow and a sentence.
-- Opening: a fight in the theory of the Italian Game. You must play the book moves, and every move comes with the idea behind it. A move that leaves the book is taken back and explained.
+- Opening: a fight in the theory of the Italian Game. You must play the book moves, and each of your book moves comes with the idea behind it. A move that leaves the book is taken back and explained.
 - Strong enemy: you start with a clear advantage and must build a decisive one within a limited number of moves. Your mistakes cost HP in proportion to the advantage you throw away, and the enemy's bar shows how close you are. If you run out of moves, the enemy escapes.
 
 Your run

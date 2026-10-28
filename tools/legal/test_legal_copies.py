@@ -19,5 +19,25 @@ class LegalCopiesTest(unittest.TestCase):
                 )
 
 
+class CreditsTest(unittest.TestCase):
+    """CREDITS.md lists what the Play bundle ships besides our own code, and says where its licence texts are."""
+
+    def test_the_android_libraries_the_export_template_bundles_are_credited(self):
+        text = (ROOT / "CREDITS.md").read_text(encoding="utf-8")
+        for name in [
+            "androidx.fragment:fragment` 1.8.6",
+            "core-splashscreen` 1.0.1",
+            "documentfile` 1.1.0",
+            "startup-runtime` 1.1.1",
+            "profileinstaller` 1.3.1",
+            "kotlin-stdlib` and `kotlin-stdlib-common` 2.1.21",
+            "kotlinx-coroutines-core`",
+        ]:
+            with self.subTest(name=name):
+                self.assertIn(name, text)
+        self.assertIn("Apache-2.0", text)
+        self.assertIn('"Licence texts"', text)
+
+
 if __name__ == "__main__":
     unittest.main()
