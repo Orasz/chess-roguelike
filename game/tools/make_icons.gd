@@ -1,7 +1,8 @@
 extends SceneTree
 ## Draws the game's icons from two CC0 sources (see CREDITS.md): the white knight of the pixel chess
 ## pieces, over a lawn of the Ninja Adventure grass tiles. It writes the project icon, the launcher
-## icons the export presets point at, and the 512 px Play listing icon:
+## icons the export presets point at (the adaptive foreground, background and monochrome layers), and the
+## 512 px Play listing icon:
 ##
 ##   godot --headless --path game -s res://tools/make_icons.gd
 ##
@@ -26,6 +27,7 @@ const _ICON := "res://assets/icon/icon.png"
 const _LAUNCHER := "res://assets/icon/launcher_192.png"
 const _ADAPTIVE_FOREGROUND := "res://assets/icon/adaptive_fg_432.png"
 const _ADAPTIVE_BACKGROUND := "res://assets/icon/adaptive_bg_432.png"
+const _ADAPTIVE_MONOCHROME := "res://assets/icon/adaptive_mono_432.png"
 ## The Play listing icon sits outside the Godot project, in the repository's `store/` folder.
 const _STORE_ICON := "../store/graphics/icon_512.png"
 
@@ -52,6 +54,7 @@ func _main() -> void:
 	ok = _save(_composed(512), _STORE_ICON) and ok
 	ok = _save(_foreground(_ADAPTIVE_PX), _ADAPTIVE_FOREGROUND) and ok
 	ok = _save(_lawn(_ADAPTIVE_PX, _scale_for(_ADAPTIVE_PX)), _ADAPTIVE_BACKGROUND) and ok
+	ok = _save(_monochrome(_ADAPTIVE_PX), _ADAPTIVE_MONOCHROME) and ok
 	quit(0 if ok else 1)
 
 
@@ -67,6 +70,17 @@ func _composed(side: int) -> Image:
 func _foreground(side: int) -> Image:
 	var image := Image.create_empty(side, side, false, Image.FORMAT_RGBA8)
 	_stamp_knight(image, _scale_for(side))
+	return image
+
+
+## The adaptive icon's monochrome layer, which Android 13+ tints for themed icons: the foreground's knight, at
+## the same scale and place, with every opaque pixel turned opaque white. The launcher reads only its alpha.
+func _monochrome(side: int) -> Image:
+	var image := _foreground(side)
+	for y in side:
+		for x in side:
+			if image.get_pixel(x, y).a > 0.0:
+				image.set_pixel(x, y, Color.WHITE)
 	return image
 
 

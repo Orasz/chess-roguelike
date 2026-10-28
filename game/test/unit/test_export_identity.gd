@@ -20,6 +20,7 @@ const REQUIRED_DEV := {
 	"launcher_icons/main_192x192": "res://assets/icon/launcher_192.png",
 	"launcher_icons/adaptive_foreground_432x432": "res://assets/icon/adaptive_fg_432.png",
 	"launcher_icons/adaptive_background_432x432": "res://assets/icon/adaptive_bg_432.png",
+	"launcher_icons/adaptive_monochrome_432x432": "res://assets/icon/adaptive_mono_432.png",
 }
 const REQUIRED_PLAY := {
 	"package/unique_name": PLAY_ID,
@@ -39,6 +40,7 @@ const REQUIRED_PLAY := {
 	"launcher_icons/main_192x192": "res://assets/icon/launcher_192.png",
 	"launcher_icons/adaptive_foreground_432x432": "res://assets/icon/adaptive_fg_432.png",
 	"launcher_icons/adaptive_background_432x432": "res://assets/icon/adaptive_bg_432.png",
+	"launcher_icons/adaptive_monochrome_432x432": "res://assets/icon/adaptive_mono_432.png",
 }
 
 ## The launcher icons, with the least size each Android generation needs.
@@ -46,6 +48,7 @@ const ICON_SIZES := {
 	"launcher_icons/main_192x192": Vector2i(192, 192),
 	"launcher_icons/adaptive_foreground_432x432": Vector2i(432, 432),
 	"launcher_icons/adaptive_background_432x432": Vector2i(432, 432),
+	"launcher_icons/adaptive_monochrome_432x432": Vector2i(432, 432),
 }
 
 var _presets := ConfigFile.new()
@@ -148,6 +151,26 @@ func test_every_launcher_icon_exists_at_its_minimum_size() -> void:
 				var least: Vector2i = ICON_SIZES[key]
 				assert_gte(image.get_width(), least.x, path)
 				assert_gte(image.get_height(), least.y, path)
+
+
+## Android 13+ tints this layer with the wallpaper's colour: it reads only its alpha, and the launcher's
+## mask hides whatever lies outside the 264 px safe circle.
+func test_the_monochrome_icon_is_a_white_silhouette_inside_the_safe_circle() -> void:
+	var image := _load_png("res://assets/icon/adaptive_mono_432.png")
+	assert_not_null(image, "it loads")
+	if image == null:
+		return
+	var opaque := 0
+	var centre := Vector2(image.get_size()) / 2.0
+	for y in image.get_height():
+		for x in image.get_width():
+			var pixel := image.get_pixel(x, y)
+			if pixel.a == 0.0:
+				continue
+			opaque += 1
+			assert_eq(pixel, Color.WHITE, "(%d, %d) is opaque white" % [x, y])
+			assert_lte(centre.distance_to(Vector2(x + 0.5, y + 0.5)), 132.0, "(%d, %d) is inside the safe circle" % [x, y])
+	assert_gt(opaque, 0, "the knight is there")
 
 
 func test_the_project_icon_is_set_and_exists() -> void:

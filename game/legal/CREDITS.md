@@ -90,3 +90,5 @@ Everything the repository ships that someone else made, with its licence.
   `game/tools/make_icons.gd` from two of the pieces above, so it carries the same licences (CC0 1.0): the
   white knight of Pixel Chess Pieces (`white_knight.png`), over grass tiles of the Ninja Adventure pack
   (`tilesets/floor.png`, the plain grass and the two with blades). Both are scaled by an integer factor.
+  The adaptive icon's monochrome layer for Android 13+ themed icons (`adaptive_mono_432.png`) is the same knight
+  as a white silhouette, so it is CC0 1.0 as well.
