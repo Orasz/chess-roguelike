@@ -12,16 +12,19 @@ your data. The short version: it collects, stores remotely and shares nothing.
 
 ### What the app collects
 
-Nothing. The app has no account, no sign-in, no analytics, no advertising and no third-party SDKs.
-It does not collect your name, your email, your location, your device identifiers or anything else
+Nothing. The app has no account, no sign-in, no analytics and no advertising. It contains no
+advertising, analytics or tracking SDKs; the open-source Godot engine and Stockfish chess engine that
+it runs on are listed in its About screen. It does not collect your name, your email, your location, your device identifiers or anything else
 about you, and it does not send anything to the developer or to anyone else.
 
 ### What the app stores
 
 The run you are playing (your position on the map, your HP and potions, the battle in progress) is
 saved in a single file in the app's private storage on your phone, so that the game can resume
-where you left it. That file never leaves the phone. It is deleted when the run ends, when you start
-a new run over it, or when you uninstall the app or clear its data.
+where you left it. That file never leaves the phone. Starting a new run overwrites it. It is deleted
+when the run ends, or when you uninstall the app or clear its data. If the file cannot be read, the
+app sets it aside as a second file in the same private storage, which stays until you uninstall the
+app or clear its data.
 
 ### Network access and permissions
 
@@ -35,8 +38,10 @@ GitHub, handle your data under their own policies, not the app.
 ### Google Play
 
 If you install the app from Google Play, Google may collect crash reports and other diagnostic data
-(Android vitals) under Google's own privacy policy. The developer receives only the aggregated
-figures that Google Play Console shows. The app itself sends nothing.
+(Android vitals) under Google's own privacy policy. The developer can see crash and ANR (app not
+responding) reports in Google Play Console, with their stack traces, device model and Android
+version. These reports carry no information that identifies you to the developer. The app itself
+sends nothing.
 
 ### Children
 
@@ -58,16 +63,19 @@ fa l'app con i tuoi dati. In breve: non raccoglie, non conserva in remoto e non 
 
 ### Che cosa raccoglie l'app
 
-Niente. L'app non ha account, accesso con credenziali, strumenti di analisi, pubblicità né SDK di
-terzi. Non raccoglie il tuo nome, la tua email, la tua posizione, gli identificativi del tuo
+Niente. L'app non ha account, accesso con credenziali, strumenti di analisi né pubblicità. Non
+contiene SDK pubblicitari, di analisi o di tracciamento; il motore Godot e il motore scacchistico
+Stockfish su cui gira, open source, sono elencati nella sua schermata Informazioni. Non raccoglie il tuo nome, la tua email, la tua posizione, gli identificativi del tuo
 dispositivo né altro che ti riguardi, e non invia nulla allo sviluppatore o a nessun altro.
 
 ### Che cosa conserva l'app
 
 La partita in corso (la tua posizione sulla mappa, i PV e le pozioni, lo scontro in corso) viene
 salvata in un unico file nella memoria privata dell'app, sul tuo telefono, così il gioco riprende da
-dove l'hai lasciato. Quel file non esce mai dal telefono. Viene cancellato quando la partita finisce,
-quando ne inizi una nuova al suo posto, o quando disinstalli l'app o ne cancelli i dati.
+dove l'hai lasciato. Quel file non esce mai dal telefono. Iniziare una nuova partita lo sovrascrive. Viene
+cancellato quando la partita finisce, o quando disinstalli l'app o ne cancelli i dati. Se il file non
+si può leggere, l'app lo mette da parte come secondo file nella stessa memoria privata, dove resta
+finché non disinstalli l'app o ne cancelli i dati.
 
 ### Accesso alla rete e permessi
 
@@ -82,8 +90,10 @@ l'app.
 ### Google Play
 
 Se installi l'app da Google Play, Google può raccogliere segnalazioni di arresto anomalo e altri dati
-diagnostici (Android vitals) secondo la propria informativa sulla privacy. Lo sviluppatore riceve
-soltanto i dati aggregati che Google Play Console mostra. L'app non invia nulla da sé.
+diagnostici (Android vitals) secondo la propria informativa sulla privacy. Lo sviluppatore può vedere in
+Google Play Console le segnalazioni di arresto anomalo e di ANR (app che non risponde), con i loro
+stack trace, il modello del dispositivo e la versione di Android. Queste segnalazioni non contengono
+informazioni che ti identifichino per lo sviluppatore. L'app non invia nulla da sé.
 
 ### Minori
 
