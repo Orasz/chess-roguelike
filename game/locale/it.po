@@ -41,6 +41,9 @@ msgstr "Dopo %s, %s ti prende %s."
 msgid "After %s, the best reply is %s."
 msgstr "Dopo %s, la risposta migliore è %s."
 
+msgid "After %s, the opponent can win your %s."
+msgstr "Dopo %s, l'avversario può prenderti %s."
+
 msgid "After %s, the opponent has mate in %d."
 msgstr "Dopo %s, l'avversario dà matto in %d."
 

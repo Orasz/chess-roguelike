@@ -31,6 +31,9 @@ msgstr ""
 msgid "After %s, the best reply is %s."
 msgstr ""
 
+msgid "After %s, the opponent can win your %s."
+msgstr ""
+
 msgid "After %s, the opponent has mate in %d."
 msgstr ""
 

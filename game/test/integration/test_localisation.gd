@@ -49,6 +49,7 @@ func test_the_template_lists_every_string():
 	var ids := _pot_entries(POT).map(func(e): return e.id)
 	assert_true(ids.has("Chess Roguelike"))
 	assert_true(ids.has("After %s, %s wins your %s."))
+	assert_true(ids.has("After %s, the opponent can win your %s."))
 	assert_true(ids.has("K"))
 
 
@@ -69,6 +70,9 @@ func test_explanations_read_in_italian():
 	TranslationServer.set_locale("it")
 	assert_eq(ExplanationBuilder.after_mistake(KNIGHT_FEN, "b4d5", _reply(false, 300, ["e6d5"])),
 		"Dopo Cd5, exd5 ti prende il cavallo.")
+	# The knight on b4 falls two plies later: no move is named.
+	assert_eq(ExplanationBuilder.after_mistake("4k3/8/8/2p5/1N6/8/8/4K3 w - - 0 1", "e1d1", _reply(false, 300, ["e8d8", "d1e1", "c5b4"])),
+		"Dopo Rd1, l'avversario può prenderti il cavallo.")
 
 
 func test_themes_and_enemy_names_read_in_italian():

@@ -43,7 +43,7 @@ func test_every_theme_outranks_the_ones_after_it():
 		assert_eq(ExplanationBuilder.theme_name(remaining), THEME_ORDER[i][1], "from %s" % THEME_ORDER[i][0])
 
 
-func test_lost_piece_is_named():
+func test_a_piece_taken_by_the_immediate_reply_names_that_move():
 	assert_eq(ExplanationBuilder.after_mistake("4k3/8/4p3/8/1N6/8/8/4K3 w - - 0 1", "b4d5",
 		_reply(false, 300, ["e6d5"])), "After Nd5, exd5 wins your knight.")
 
@@ -61,16 +61,23 @@ func test_generic_sentence_without_material_change():
 		"After a3, the best reply is e5.")
 
 
-func test_material_lost_a_few_plies_later_names_the_capture():
+func test_material_lost_a_few_plies_later_does_not_name_the_capture():
+	# The knight on b4 falls on the opponent's second move, which is not their next move yet.
 	var pv := ["e8d8", "d1e1", "c5b4"]
 	assert_eq(ExplanationBuilder.after_mistake(HANGING_KNIGHT, "e1d1", _reply(false, 300, pv)),
-		"After Kd1, cxb4 wins your knight.")
+		"After Kd1, the opponent can win your knight.")
 
 
-func test_a_queen_taken_on_the_third_ply_names_that_capture():
+func test_a_queen_taken_on_the_third_ply_is_a_threat_not_a_move():
 	# h6 h3 Qxd1+ Kh2: the queen falls on the opponent's second move, and nothing takes it back.
 	var pv := ["h7h6", "h2h3", "d8d1", "g1h2"]
 	assert_eq(ExplanationBuilder.after_mistake(QUEEN_TRADE, "a2a3", _reply(false, 900, pv)),
+		"After a3, the opponent can win your queen.")
+
+func test_a_piece_taken_on_the_first_ply_of_a_longer_line_names_that_move():
+	# Qxd1+ is the opponent's next move, whatever follows it.
+	var pv := ["d8d1", "g1h2", "h7h6", "h2g3"]
+	assert_eq(ExplanationBuilder.after_mistake("r2q2k1/p6p/8/8/8/8/P6P/3Q2K1 w - - 0 1", "a2a3", _reply(false, 900, pv)),
 		"After a3, Qxd1 wins your queen.")
 
 
@@ -101,11 +108,12 @@ func test_replay_stops_at_the_first_illegal_move_of_the_line():
 			"After Kd1, the best reply is Kd8.", bad_move)
 
 
-func test_the_most_valuable_lost_piece_is_named_with_the_move_that_takes_it():
-	# dxe4 takes a pawn first; bxc4, two plies later, takes the queen.
+func test_the_most_valuable_lost_piece_is_named_even_when_a_cheaper_one_falls_first():
+	# dxe4 takes a pawn first, the immediate reply; bxc4, two plies later, takes the queen, so the
+	# sentence names no move.
 	var pv := ["d5e4", "h2g3", "b5c4"]
 	assert_eq(ExplanationBuilder.after_mistake(TWO_TARGETS, "h1h2", _reply(false, 900, pv)),
-		"After Kh2, bxc4 wins your queen.")
+		"After Kh2, the opponent can win your queen.")
 
 
 func test_black_is_the_mover_when_it_is_black_to_move():
