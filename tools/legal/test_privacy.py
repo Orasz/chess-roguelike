@@ -16,6 +16,18 @@ class PrivacyPolicyTest(unittest.TestCase):
         self.assertIn(ISSUES_URL, english)
         self.assertIn(ISSUES_URL, italian)
 
+    def test_the_play_section_names_what_the_developer_sees_and_the_old_claims_are_gone(self):
+        text = POLICY.read_text(encoding="utf-8")
+        english, italian = text.split("\n## English\n")[1].split("\n## Italiano\n")
+        for language, section in [("English", english), ("Italiano", italian)]:
+            with self.subTest(language=language):
+                play = section.split("### Google Play")[1].split("###")[0]
+                self.assertIn("stack trace", play.lower())
+                self.assertNotIn("aggregat", section.lower())
+                self.assertNotIn("third-party sdk", section.lower())
+                self.assertNotIn("sdk di terzi", section.lower())
+                self.assertNotIn("identifies you", section.lower())
+
 
 if __name__ == "__main__":
     unittest.main()
