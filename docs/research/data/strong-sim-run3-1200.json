@@ -1,0 +1,471 @@
+{
+	"constants": {
+		"DAMAGE_DEADZONE_WP": 5.0,
+		"DECISIVE_GAIN_CP": 150,
+		"DECISIVE_MIN_CP": 500,
+		"STRONG_CANDIDATES": 5,
+		"STRONG_MOVE_LIMIT": 12,
+		"STRONG_SEARCH_MS": 700
+	},
+	"date": "2026-10-28",
+	"enemy_elo": 1200,
+	"rating": 1200,
+	"results": [
+		{
+			"hp_lost": 0,
+			"id": "eh389",
+			"outcome": 0,
+			"player_moves": 9
+		},
+		{
+			"hp_lost": 0,
+			"id": "iuZK7",
+			"outcome": 0,
+			"player_moves": 8
+		},
+		{
+			"hp_lost": 0,
+			"id": "fHiqZ",
+			"outcome": 0,
+			"player_moves": 11
+		},
+		{
+			"hp_lost": 0,
+			"id": "BLOyi",
+			"outcome": 0,
+			"player_moves": 7
+		},
+		{
+			"hp_lost": 0,
+			"id": "xJLK5",
+			"outcome": 0,
+			"player_moves": 5
+		},
+		{
+			"hp_lost": 0,
+			"id": "4A6fu",
+			"outcome": 0,
+			"player_moves": 2
+		},
+		{
+			"hp_lost": 0,
+			"id": "vzGLk",
+			"outcome": 0,
+			"player_moves": 4
+		},
+		{
+			"hp_lost": 0,
+			"id": "E2Xhu",
+			"outcome": 0,
+			"player_moves": 11
+		},
+		{
+			"hp_lost": 15,
+			"id": "DEr4c",
+			"outcome": 1,
+			"player_moves": 12
+		},
+		{
+			"hp_lost": 0,
+			"id": "qRkSO",
+			"outcome": 0,
+			"player_moves": 6
+		},
+		{
+			"hp_lost": 0,
+			"id": "CiCri",
+			"outcome": 0,
+			"player_moves": 9
+		},
+		{
+			"hp_lost": 0,
+			"id": "JfzcN",
+			"outcome": 0,
+			"player_moves": 11
+		},
+		{
+			"hp_lost": 0,
+			"id": "9y44z",
+			"outcome": 0,
+			"player_moves": 8
+		},
+		{
+			"hp_lost": 0,
+			"id": "Tivsw",
+			"outcome": 0,
+			"player_moves": 2
+		},
+		{
+			"hp_lost": 0,
+			"id": "JubY0",
+			"outcome": 0,
+			"player_moves": 10
+		},
+		{
+			"hp_lost": 0,
+			"id": "5c4je",
+			"outcome": 0,
+			"player_moves": 4
+		},
+		{
+			"hp_lost": 15,
+			"id": "MtLLt",
+			"outcome": 1,
+			"player_moves": 12
+		},
+		{
+			"hp_lost": 0,
+			"id": "RtRov",
+			"outcome": 0,
+			"player_moves": 3
+		},
+		{
+			"hp_lost": 0,
+			"id": "7DvIR",
+			"outcome": 0,
+			"player_moves": 2
+		},
+		{
+			"hp_lost": 0,
+			"id": "xV7p4",
+			"outcome": 0,
+			"player_moves": 5
+		},
+		{
+			"hp_lost": 0,
+			"id": "xrS65",
+			"outcome": 0,
+			"player_moves": 5
+		},
+		{
+			"hp_lost": 15,
+			"id": "wPYpz",
+			"outcome": 1,
+			"player_moves": 12
+		},
+		{
+			"hp_lost": 0,
+			"id": "GoiUa",
+			"outcome": 0,
+			"player_moves": 4
+		},
+		{
+			"hp_lost": 0,
+			"id": "Jx5Wv",
+			"outcome": 0,
+			"player_moves": 9
+		},
+		{
+			"hp_lost": 15,
+			"id": "QeiDI",
+			"outcome": 1,
+			"player_moves": 12
+		},
+		{
+			"hp_lost": 15,
+			"id": "pJPi2",
+			"outcome": 1,
+			"player_moves": 12
+		},
+		{
+			"hp_lost": 0,
+			"id": "NUgqZ",
+			"outcome": 0,
+			"player_moves": 9
+		},
+		{
+			"hp_lost": 0,
+			"id": "CU8tB",
+			"outcome": 0,
+			"player_moves": 3
+		},
+		{
+			"hp_lost": 0,
+			"id": "EZtTZ",
+			"outcome": 0,
+			"player_moves": 5
+		},
+		{
+			"hp_lost": 15,
+			"id": "U0epN",
+			"outcome": 1,
+			"player_moves": 12
+		},
+		{
+			"hp_lost": 0,
+			"id": "sANhm",
+			"outcome": 0,
+			"player_moves": 3
+		},
+		{
+			"hp_lost": 0,
+			"id": "UZ0xi",
+			"outcome": 0,
+			"player_moves": 6
+		},
+		{
+			"hp_lost": 0,
+			"id": "b2OR1",
+			"outcome": 0,
+			"player_moves": 12
+		},
+		{
+			"hp_lost": 0,
+			"id": "EyJKK",
+			"outcome": 0,
+			"player_moves": 4
+		},
+		{
+			"hp_lost": 0,
+			"id": "EcNvg",
+			"outcome": 0,
+			"player_moves": 4
+		},
+		{
+			"hp_lost": 0,
+			"id": "uuVhx",
+			"outcome": 0,
+			"player_moves": 12
+		},
+		{
+			"hp_lost": 0,
+			"id": "NsUi3",
+			"outcome": 0,
+			"player_moves": 5
+		},
+		{
+			"hp_lost": 15,
+			"id": "QvtCF",
+			"outcome": 1,
+			"player_moves": 12
+		},
+		{
+			"hp_lost": 0,
+			"id": "uTmQ8",
+			"outcome": 0,
+			"player_moves": 10
+		},
+		{
+			"hp_lost": 0,
+			"id": "kpmrl",
+			"outcome": 0,
+			"player_moves": 8
+		},
+		{
+			"hp_lost": 15,
+			"id": "sKeD9",
+			"outcome": 1,
+			"player_moves": 12
+		},
+		{
+			"hp_lost": 0,
+			"id": "397L6",
+			"outcome": 0,
+			"player_moves": 4
+		},
+		{
+			"hp_lost": 0,
+			"id": "ZlRnJ",
+			"outcome": 0,
+			"player_moves": 4
+		},
+		{
+			"hp_lost": 0,
+			"id": "2jRtq",
+			"outcome": 0,
+			"player_moves": 9
+		},
+		{
+			"hp_lost": 0,
+			"id": "8tLZ1",
+			"outcome": 0,
+			"player_moves": 3
+		},
+		{
+			"hp_lost": 0,
+			"id": "VZlFB",
+			"outcome": 0,
+			"player_moves": 2
+		},
+		{
+			"hp_lost": 0,
+			"id": "VsOA5",
+			"outcome": 0,
+			"player_moves": 7
+		},
+		{
+			"hp_lost": 0,
+			"id": "CwDr6",
+			"outcome": 0,
+			"player_moves": 3
+		},
+		{
+			"hp_lost": 0,
+			"id": "vl0PJ",
+			"outcome": 0,
+			"player_moves": 3
+		},
+		{
+			"hp_lost": 0,
+			"id": "XDYog",
+			"outcome": 0,
+			"player_moves": 3
+		},
+		{
+			"hp_lost": 0,
+			"id": "UfEo8",
+			"outcome": 0,
+			"player_moves": 12
+		},
+		{
+			"hp_lost": 15,
+			"id": "aP7kV",
+			"outcome": 1,
+			"player_moves": 12
+		},
+		{
+			"hp_lost": 0,
+			"id": "gtWHj",
+			"outcome": 0,
+			"player_moves": 2
+		},
+		{
+			"hp_lost": 0,
+			"id": "fgGON",
+			"outcome": 0,
+			"player_moves": 4
+		},
+		{
+			"hp_lost": 0,
+			"id": "lA0sf",
+			"outcome": 0,
+			"player_moves": 7
+		},
+		{
+			"hp_lost": 0,
+			"id": "MWiO8",
+			"outcome": 0,
+			"player_moves": 9
+		},
+		{
+			"hp_lost": 15,
+			"id": "rieBx",
+			"outcome": 1,
+			"player_moves": 12
+		},
+		{
+			"hp_lost": 0,
+			"id": "X0n1a",
+			"outcome": 0,
+			"player_moves": 9
+		},
+		{
+			"hp_lost": 0,
+			"id": "jetwk",
+			"outcome": 0,
+			"player_moves": 10
+		},
+		{
+			"hp_lost": 15,
+			"id": "G6pBK",
+			"outcome": 1,
+			"player_moves": 12
+		},
+		{
+			"hp_lost": 0,
+			"id": "8tXSz",
+			"outcome": 0,
+			"player_moves": 5
+		},
+		{
+			"hp_lost": 15,
+			"id": "Q2JaT",
+			"outcome": 1,
+			"player_moves": 12
+		},
+		{
+			"hp_lost": 0,
+			"id": "hDyDJ",
+			"outcome": 0,
+			"player_moves": 10
+		},
+		{
+			"hp_lost": 15,
+			"id": "TvxLp",
+			"outcome": 1,
+			"player_moves": 12
+		},
+		{
+			"hp_lost": 0,
+			"id": "6EtGx",
+			"outcome": 0,
+			"player_moves": 6
+		},
+		{
+			"hp_lost": 15,
+			"id": "8LeEa",
+			"outcome": 1,
+			"player_moves": 12
+		},
+		{
+			"hp_lost": 0,
+			"id": "jbYkD",
+			"outcome": 0,
+			"player_moves": 7
+		},
+		{
+			"hp_lost": 0,
+			"id": "A42V3",
+			"outcome": 0,
+			"player_moves": 4
+		},
+		{
+			"hp_lost": 0,
+			"id": "hxGmV",
+			"outcome": 0,
+			"player_moves": 5
+		},
+		{
+			"hp_lost": 0,
+			"id": "ogcME",
+			"outcome": 0,
+			"player_moves": 4
+		},
+		{
+			"hp_lost": 0,
+			"id": "o8D39",
+			"outcome": 0,
+			"player_moves": 7
+		},
+		{
+			"hp_lost": 0,
+			"id": "AndeD",
+			"outcome": 0,
+			"player_moves": 5
+		},
+		{
+			"hp_lost": 0,
+			"id": "gwja2",
+			"outcome": 0,
+			"player_moves": 10
+		},
+		{
+			"hp_lost": 0,
+			"id": "dN3Jf",
+			"outcome": 0,
+			"player_moves": 7
+		},
+		{
+			"hp_lost": 15,
+			"id": "d9kU0",
+			"outcome": 1,
+			"player_moves": 12
+		}
+	],
+	"summary": {
+		"count": 75,
+		"mean_hp_lost": 3.0,
+		"median_moves_to_win": 5.5,
+		"won_share": 0.8
+	}
+}

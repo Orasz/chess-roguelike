@@ -60,6 +60,19 @@ func test_decisive_advantage_wins_before_the_enemy_moves():
 	enc.submit_move("g1f3"); await wait_for_signal(enc.finished, 2)
 	assert_signal_emitted_with_parameters(enc, "finished", [RunState.Outcome.WON]); assert_eq(enc.moves.size(), 2)
 
+## From +300 cp the target is the floor, `Tuning.DECISIVE_MIN_CP` = 500, above 300 + `Tuning.DECISIVE_GAIN_CP`.
+func test_one_centipawn_short_of_the_target_plays_on():
+	await _make(OPENING, [FakeEngine.line("g1f3", 300)])
+	fake.replies.append([FakeEngine.line("b8c6", -499)])
+	enc.submit_move("g1f3"); await wait_for_signal(enc.input_enabled, 2)
+	assert_eq(enc.outcome, -1); assert_eq(enc.moves[-1], "b8c6")
+
+func test_reaching_the_target_wins():
+	await _make(OPENING, [FakeEngine.line("g1f3", 300)])
+	fake.replies.append([FakeEngine.line("b8c6", -500)])
+	enc.submit_move("g1f3"); await wait_for_signal(enc.finished, 2)
+	assert_signal_emitted_with_parameters(enc, "finished", [RunState.Outcome.WON]); assert_eq(enc.moves.size(), 2)
+
 func test_checkmate_wins_and_stalemate_draws_without_searching():
 	await _make(ENDGAME, [FakeEngine.line("e7e8", 500)])
 	enc.submit_move("e7e8"); assert_signal_emitted_with_parameters(enc, "finished", [RunState.Outcome.WON])
