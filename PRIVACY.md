@@ -23,7 +23,9 @@ else. What Google itself may provide to the developer is described under Google 
 
 The run you are playing (your position on the map, your HP and potions, the battle in progress) is
 saved in a single file in the app's private storage on your phone, so that the game can resume
-where you left it. That file never leaves the phone. Starting a new run overwrites it. It is deleted
+where you left it. The file is not part of Google's cloud backup. When you set up a new phone from
+this one, Android's own transfer may copy it to that new phone, and nowhere else; it never goes to
+the developer or to anyone else. Starting a new run overwrites it. It is deleted
 when the run ends, or when you uninstall the app or clear its data. If the file cannot be read, the
 app sets it aside as a second file in the same private storage, which stays until you uninstall the
 app or clear its data.
@@ -76,9 +78,11 @@ sviluppatore è descritto nella sezione Google Play più sotto.
 
 La partita in corso (la tua posizione sulla mappa, i PV e le pozioni, lo scontro in corso) viene
 salvata in un unico file nella memoria privata dell'app, sul tuo telefono, così il gioco riprende da
-dove l'hai lasciato. Quel file non esce mai dal telefono. Iniziare una nuova partita lo
-sovrascrive. Viene cancellato quando la partita finisce, o quando disinstalli l'app o ne cancelli i
-dati. Se il file non si può leggere, l'app lo mette da parte come secondo file nella stessa memoria
+dove l'hai lasciato. Il file non fa parte del backup su cloud di Google. Quando configuri un
+telefono nuovo a partire da questo, il trasferimento di Android stesso può copiarlo sul telefono
+nuovo, e da nessun'altra parte; non va mai allo sviluppatore né a nessun altro. Iniziare una nuova
+partita lo sovrascrive. Viene cancellato quando la partita finisce, o quando disinstalli l'app o ne
+cancelli i dati. Se il file non si può leggere, l'app lo mette da parte come secondo file nella stessa memoria
 privata, dove resta finché non disinstalli l'app o ne cancelli i dati.
 
 ### Accesso alla rete e permessi

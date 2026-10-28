@@ -103,7 +103,11 @@ it in a private window before saving, to check that it loads.
 
 - [ ] **Does your app collect or share any of the required user data types?** **No.**
   - "Collect" means sending data off the device. The app sends nothing: it has no network access, no analytics,
-    no ads and no SDK. The run is saved in a file in the app's private storage, which never leaves the phone.
+    no ads and no SDK. The run is saved in a file in the app's private storage. The file is kept out of Google's
+    cloud backup (`allowBackup="false"`); when the player sets up a new phone from this one, Android's own
+    device-to-device transfer may copy it to that new phone. A transfer between the player's own devices made by
+    the operating system is not "collection" by the developer, since the data never reaches the developer or any
+    other party (check the console wording, and the Data safety help text, when answering).
   - Crash reports in Android vitals are collected by Google, not by the app, and the app contains no code of its
     own for them. They are described in the privacy policy, under "Google Play".
 - [ ] **Privacy policy URL:** `https://github.com/Orasz/chess-roguelike/blob/main/PRIVACY.md`

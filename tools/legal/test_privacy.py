@@ -28,6 +28,17 @@ class PrivacyPolicyTest(unittest.TestCase):
                 self.assertNotIn("sdk di terzi", section.lower())
                 self.assertNotIn("identifies you", section.lower())
 
+    def test_the_save_is_not_said_to_stay_on_the_phone_absolutely(self):
+        """Android's device-to-device transfer may copy the save to a new phone, so "never leaves" is inexact."""
+        text = POLICY.read_text(encoding="utf-8")
+        english, italian = text.split("\n## English\n")[1].split("\n## Italiano\n")
+        self.assertNotIn("never leaves the phone", english)
+        self.assertNotIn("non esce mai dal telefono", italian)
+        self.assertIn("cloud backup", english)
+        self.assertIn("new phone", english)
+        self.assertIn("backup su cloud", italian)
+        self.assertIn("telefono nuovo", italian)
+
 
 if __name__ == "__main__":
     unittest.main()

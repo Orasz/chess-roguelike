@@ -120,8 +120,10 @@ func test_the_play_preset_declares_no_permission() -> void:
 			assert_false(_presets.get_value(PLAY + ".options", key), key)
 
 
-func test_user_data_never_leaves_the_phone_through_the_backup() -> void:
-	assert_eq(_option(PLAY, "user_data_backup/allow"), false, "PRIVACY.md says the save never leaves the phone")
+func test_the_save_is_kept_out_of_the_cloud_backup() -> void:
+	# allowBackup="false" stops Google's cloud backup; it does not stop Android's device-to-device transfer,
+	# and PRIVACY.md says so.
+	assert_eq(_option(PLAY, "user_data_backup/allow"), false, "PRIVACY.md says the save is not part of the cloud backup")
 
 
 func test_both_presets_keep_the_same_filters() -> void:
