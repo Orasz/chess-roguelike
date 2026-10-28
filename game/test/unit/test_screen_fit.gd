@@ -34,6 +34,23 @@ func test_current_margins_are_zero_on_a_desktop_or_headless_run():
 	# The display of a desktop or a headless run is never inside the window, so there is no inset.
 	assert_eq([m.left, m.top, m.right, m.bottom], [0.0, 0.0, 0.0, 0.0])
 
+func test_android_keeps_content_out_of_the_gesture_zone_when_the_display_reports_no_inset():
+	var m := ScreenFit.current_margins(get_viewport(), "Android")
+	assert_eq(m.bottom, float(Tuning.ANDROID_MIN_BOTTOM_MARGIN))
+	assert_eq([m.left, m.top, m.right], [0.0, 0.0, 0.0], "only the bottom is raised")
+
+func test_android_keeps_a_bigger_inset_than_the_least():
+	var m := ScreenFit.with_platform_minimum({"left": 0.0, "top": 69.0, "right": 0.0, "bottom": 80.0}, "Android")
+	assert_eq(m.bottom, 80.0)
+	assert_eq(m.top, 69.0)
+	var small := ScreenFit.with_platform_minimum({"left": 0.0, "top": 0.0, "right": 0.0, "bottom": 32.0}, "Android")
+	assert_eq(small.bottom, float(Tuning.ANDROID_MIN_BOTTOM_MARGIN), "a smaller inset is raised to the least")
+
+func test_other_platforms_keep_the_zero_bottom_margin():
+	for platform in ["macOS", "Windows", "Linux", "iOS", "Web"]:
+		var m := ScreenFit.current_margins(get_viewport(), platform)
+		assert_eq(m.bottom, 0.0, platform)
+
 func test_a_safe_margin_container_adds_the_inset_to_its_own_margins():
 	var box := SafeMarginContainer.new()
 	box.add_theme_constant_override("margin_top", 24)
@@ -46,3 +63,10 @@ func test_a_safe_margin_container_adds_the_inset_to_its_own_margins():
 	assert_eq(box.get_theme_constant("margin_left"), 16)
 	box.apply_margins({"left": 0.0, "top": 0.0, "right": 0.0, "bottom": 0.0})
 	assert_eq(box.get_theme_constant("margin_top"), 24, "the base comes back, it does not accumulate")
+
+func test_a_safe_margin_container_on_android_adds_the_least_bottom_margin():
+	var box := SafeMarginContainer.new()
+	box.add_theme_constant_override("margin_bottom", 16)
+	box.platform = "Android"
+	add_child_autofree(box)
+	assert_eq(box.get_theme_constant("margin_bottom"), 16 + Tuning.ANDROID_MIN_BOTTOM_MARGIN)

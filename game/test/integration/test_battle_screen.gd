@@ -74,6 +74,18 @@ func test_board_is_square_and_fits_from_9_16_to_9_20():
 		assert_true(board.get_global_rect().end.y <= dialogue.get_global_rect().position.y, "board above dialogue at %s" % window_size)
 		assert_true(dialogue.get_global_rect().end.y <= window_size.y, "dialogue inside the screen at %s" % window_size)
 
+func test_the_dialogue_keeps_clear_of_the_gesture_zone_on_android():
+	window.size = Vector2(720, 1600)
+	screen.get_node("Margin").platform = "Android"
+	screen.get_node("Margin").refresh()
+	await wait_frames(2)
+	var board := _board()
+	var dialogue: Control = screen.get_node("Margin/Column/DialoguePanel")
+	assert_eq(board.size, Vector2(640, 640), "the board keeps its size")
+	assert_gte(window.size.y - dialogue.get_global_rect().end.y, float(Tuning.ANDROID_MIN_BOTTOM_MARGIN), "the dialogue ends above the gesture zone")
+	assert_true(board.get_global_rect().end.y <= dialogue.get_global_rect().position.y, "board above dialogue")
+	assert_gte(dialogue.size.y, float(Tuning.DIALOGUE_MIN_HEIGHT), "the dialogue box keeps its least height")
+
 func test_board_fits_a_3_by_4_window():
 	window.size = Vector2(720, 960)
 	await wait_process_frames(2)

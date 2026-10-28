@@ -32,13 +32,27 @@ static func safe_margins(safe: Rect2i, window: Vector2i, viewport: Vector2) -> D
 	}
 
 
-## The margins of the display's safe area for `viewport`. Zeros when the display reports no safe
-## area, or one that does not lie inside the window: a desktop or a headless run, where it is the
-## whole screen.
-static func current_margins(viewport: Viewport) -> Dictionary:
+## The margins of the display's safe area for `viewport`, on `platform` (an `OS.get_name()`
+## value). Zeros when the display reports no safe area, or one that does not lie inside the window:
+## a desktop or a headless run, where it is the whole screen. On Android the bottom is then raised
+## to `Tuning.ANDROID_MIN_BOTTOM_MARGIN`, see `with_platform_minimum`.
+static func current_margins(viewport: Viewport, platform: String = OS.get_name()) -> Dictionary:
+	var margins := {"left": 0.0, "top": 0.0, "right": 0.0, "bottom": 0.0}
 	var safe := DisplayServer.get_display_safe_area()
 	var window := DisplayServer.window_get_size()
 	var size := viewport.get_visible_rect().size
-	if safe.size == Vector2i.ZERO or not Rect2i(Vector2i.ZERO, window).encloses(safe) or size.x <= 0.0 or size.y <= 0.0:
-		return {"left": 0.0, "top": 0.0, "right": 0.0, "bottom": 0.0}
-	return safe_margins(safe, window, size)
+	if safe.size != Vector2i.ZERO and Rect2i(Vector2i.ZERO, window).encloses(safe) and size.x > 0.0 and size.y > 0.0:
+		margins = safe_margins(safe, window, size)
+	return with_platform_minimum(margins, platform)
+
+
+## `margins` with the bottom raised to `Tuning.ANDROID_MIN_BOTTOM_MARGIN` on Android, and returned
+## unchanged elsewhere. Godot reports the safe area of an immersive Android game from the display
+## cutout alone, so the hidden navigation bar and the system's gesture zone at the bottom of the
+## screen are not part of it, and content there would be swallowed by the swipe-up gesture.
+static func with_platform_minimum(margins: Dictionary, platform: String) -> Dictionary:
+	if platform != "Android":
+		return margins
+	var raised := margins.duplicate()
+	raised["bottom"] = maxf(margins["bottom"], float(Tuning.ANDROID_MIN_BOTTOM_MARGIN))
+	return raised

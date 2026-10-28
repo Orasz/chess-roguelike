@@ -65,6 +65,10 @@ const BAR_TWEEN_S := 0.4
 const MAX_EXPAND_ASPECT := 0.75
 const DIALOGUE_MIN_HEIGHT := 160
 const BOARD_MIN_SIDE := 384
+## UI: the least bottom margin on Android, in viewport units. The hidden navigation bar and the
+## system's gesture zone (96 px at the 1.75 scale of a 1260x2800 phone) are not part of the display
+## safe area while the game is immersive, so content stays this far from the bottom edge regardless.
+const ANDROID_MIN_BOTTOM_MARGIN := 56
 
 ## Player rating: the presets of the new-run menu, by name. The slice has no rating updates.
 const RATING_PRESETS := {"Beginner": 600, "Club": 1200, "Strong": 1800}

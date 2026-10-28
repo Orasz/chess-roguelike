@@ -9,6 +9,9 @@ signal margins_changed()
 
 const _SIDES := ["left", "top", "right", "bottom"]
 
+## The platform whose margins apply, an `OS.get_name()` value. Tests set it to run the Android path.
+var platform := OS.get_name()
+
 ## The margins this container has without the safe area.
 var _base := {}
 
@@ -16,8 +19,8 @@ var _base := {}
 func _ready() -> void:
 	for side: String in _SIDES:
 		_base[side] = get_theme_constant("margin_" + side)
-	get_viewport().size_changed.connect(_refresh)
-	_refresh()
+	get_viewport().size_changed.connect(refresh)
+	refresh()
 
 
 ## Sets each margin to its base plus `margins` (`{left, top, right, bottom}` in viewport units),
@@ -31,5 +34,6 @@ func apply_margins(margins: Dictionary) -> void:
 	margins_changed.emit()
 
 
-func _refresh() -> void:
-	apply_margins(ScreenFit.current_margins(get_viewport()))
+## Reads the safe area again and applies it.
+func refresh() -> void:
+	apply_margins(ScreenFit.current_margins(get_viewport(), platform))
