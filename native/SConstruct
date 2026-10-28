@@ -40,9 +40,14 @@ def cpp(pattern, exclude=()):
 sf_src = (cpp(SF + "/*.cpp", exclude=("main.cpp",))
           + cpp(SF + "/nnue/*.cpp", exclude=("network.cpp",))
           + cpp(SF + "/nnue/features/*.cpp")
-          + cpp(SF + "/syzygy/*.cpp")
-          + cpp("bridge/*.cpp"))
+          + cpp(SF + "/syzygy/*.cpp"))
 sf_objs = [sf.SharedObject(s) for s in sf_src]
+# The bridge includes Stockfish's headers by name, found through -iquote. SCons's C scanner reads only CPPPATH,
+# so it does not see them: without this, a header change would leave bridge/sf_bridge.os stale.
+sf_headers = [h for sub in ("", "/nnue", "/nnue/features", "/syzygy") for h in Glob(SF + sub + "/*.h")]
+bridge_objs = [sf.SharedObject(s) for s in cpp("bridge/*.cpp")]
+sf.Depends(bridge_objs, sf_headers)
+sf_objs += bridge_objs
 net_obj = sf.SharedObject(SF + "/nnue/network.cpp")
 sf.Depends(net_obj, NET)          # SCons does not scan .incbin
 
