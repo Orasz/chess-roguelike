@@ -124,6 +124,7 @@ func _after_player_move() -> void:
 	match ChessRules.status(_root_fen, moves):
 		ChessRules.Status.CHECKMATE:
 			enemy_bar.emit(0.0)
+			_say(tr("Checkmate! %s is beaten.") % enemy_name)
 			_finish(RunState.Outcome.WON)
 		ChessRules.Status.ONGOING:
 			await _enemy_turn()

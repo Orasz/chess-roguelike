@@ -23,6 +23,9 @@ msgstr "%s ti sfugge!"
 msgid "Decisive advantage! %s is beaten."
 msgstr "Vantaggio decisivo! %s è battuto."
 
+msgid "Checkmate! %s is beaten."
+msgstr "Scacco matto! %s è battuto."
+
 msgid "Moves left: %d"
 msgstr "Mosse rimaste: %d"
 

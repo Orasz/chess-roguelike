@@ -274,6 +274,12 @@ func test_a_decisive_win_says_so_by_name():
 	assert_signal_emitted_with_parameters(enc, "message", ["Decisive advantage! Gatekeeper is beaten."])
 	assert_eq(run.battle.message, "Decisive advantage! Gatekeeper is beaten.")
 
+func test_a_win_by_mate_says_so_by_name():
+	await _make(ENDGAME, [FakeEngine.line("e7e8", 500)])
+	enc.submit_move("e7e8")
+	assert_signal_emitted_with_parameters(enc, "message", ["Checkmate! Gatekeeper is beaten."])
+	assert_eq(run.battle.message, "Checkmate! Gatekeeper is beaten.")
+
 func test_a_fresh_battle_announces_every_move_it_has_left():
 	await _make(OPENING, [FakeEngine.line("g1f3", 300)])
 	assert_signal_emitted_with_parameters(enc, "moves_left", [Tuning.STRONG_MOVE_LIMIT])

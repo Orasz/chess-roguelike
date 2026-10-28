@@ -55,6 +55,9 @@ msgstr ""
 msgid "Capturing the defender"
 msgstr ""
 
+msgid "Checkmate! %s is beaten."
+msgstr ""
+
 msgid "Chess Roguelike"
 msgstr ""
 
