@@ -19,13 +19,17 @@ Everything in the Android setup of the [README](../README.md#android-setup) appl
 - **Godot's Gradle build template** is installed by `make android-template` (it runs inside `make aab`). It lands
   in `game/android/`, which git ignores: it is about 216 MB and regenerable. Godot has no command that only
   installs it, so the target uses the `--install-android-build-template` flag together with an export that is made
-  to fail before it builds anything. Delete `game/android/` to force a reinstall; the target also does it by
-  itself when the template's version differs from the Godot in use.
+  to fail before it builds anything. The target then checks that the unzip finished (`build.gradle`, `gradlew` and
+  the release `godot-lib` AAR are there) and writes `game/android/.installed-by-make`, which holds the Godot
+  version. It reinstalls when that file is missing or names another Godot, so an interrupted install is redone.
+  Delete `game/android/` to force a reinstall.
 - **The first `make aab`** is a Gradle build. Gradle downloads its own distribution and the Android Gradle plugin's
-  dependencies, so it needs the network the first time. Godot's template names NDK 29.0.14206865
-  (`ndkVersion` in `game/android/build/config.gradle`) while the setup installs r28b. The native libraries are
-  prebuilt, not compiled by Gradle, but Gradle may still want that NDK to strip them. If the build complains,
-  install it with `sdkmanager --sdk_root="$ANDROID_HOME" "ndk;29.0.14206865"` (about 1.05 GB to download).
+  dependencies, so it needs the network the first time (behind a TLS-intercepting proxy, read
+  [Building behind a TLS-intercepting proxy](#building-behind-a-tls-intercepting-proxy)). The native libraries
+  are prebuilt, not compiled by Gradle: the template has no `externalNativeBuild` block. Its `ndkVersion` is
+  `29.0.14206865`, set in `game/android/build/config.gradle` (line 16) and used twice in
+  `game/android/build/build.gradle`, but the build succeeded here with only NDK r28b installed, so NDK 29 is
+  **not needed**. NDK r28b is also the one `make check-aab` uses for `llvm-objdump`.
 
 ## The upload key, once
 
@@ -55,14 +59,23 @@ read -rs "GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD?Upload key password: "; export
 ```
 
 The `read` is for zsh; it keeps the password out of the shell history and of the screen. In bash, use
-`read -rs -p "Upload key password: " GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD`. The variables last as long as the
-terminal window does.
+`read -rs -p "Upload key password: " GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD; export GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD`
+(without the `export` the build does not see the variable). The variables last as long as the terminal window does.
+
+Two things to know about the password while `make aab` runs:
+
+- Godot hands the keystore password to Gradle on the `gradlew` command line, so any process of your user can read
+  it with `ps` for as long as the build lasts. Run the build on a machine and in a session you control, and never
+  add `--verbose` to the `aab` export: it echoes that command line.
+- The other targets (`make check-aab`, `make install-aab`) start bundletool inside the same terminal, so it
+  inherits the variables, but it ignores them and never reads the upload key. To keep them out of its
+  environment anyway, run `env -u GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD make check-aab`.
 
 ## Building, checking, trying
 
 ```bash
 make aab                 # builds, imports, installs the template, exports and signs the bundle
-make check-aab           # checks build/chess-roguelike-<version>.aab; pass AAB=<file> to check another one
+make check-aab           # checks build/chess-roguelike-<version name>-<version code>.aab; pass AAB=<file> to check another one
 make install-aab         # builds the APKs for the USB phone, signed with the debug key, and installs them
 ```
 
@@ -71,12 +84,15 @@ exist. It builds the release engine library (`make native-android-release`) firs
 
 `make check-aab` prints one PASS or FAIL line per condition and exits with 1 when any fails. It requires:
 
-1. `bundletool dump config` shows `PAGE_ALIGNMENT_16K`;
-2. `libstockfish_gd.android.template_release.arm64.so` is in the bundle;
+1. `bundletool dump config` has `optimizations.uncompressNativeLibraries.enabled` true and its `alignment`
+   `PAGE_ALIGNMENT_16K`. This is what makes the APKs that Play builds store the libraries uncompressed and 16 KB
+   aligned; the zip entries inside the AAB are deflated by design, so they are not checked;
+2. `libstockfish_gd.android.template_release.arm64.so` is in the bundle, and no library of another ABI is
+   (arm64-v8a only);
 3. every `base/lib/arm64-v8a/*.so` has only LOAD segments with `align 2**14` (16 KB), read with the NDK's
    `llvm-objdump -p`;
-4. every one of those libraries is stored in the zip, not deflated (the 16 KB zip alignment depends on it);
-5. the manifest has the Play id, the `versionCode` of the preset, `targetSdkVersion` 36 and no `uses-permission`.
+4. the manifest has the Play id, the `versionCode` of the preset, `minSdkVersion` 24, `targetSdkVersion` 36 and
+   no `uses-permission`.
 
 `make install-aab` asks bundletool for the APKs of the connected phone and installs them: the same split APKs
 a download from Play gives, unlike `make install`. They are signed with bundletool's default **debug key**,
@@ -102,3 +118,26 @@ section `[preset.1.options]` of the "Android Play" preset:
 The bundle's file name, the build and `make check-aab` all read these two values from the preset, so nothing else
 needs editing. The preset's `export_path` is only the default of Godot's editor; update it too if you export from
 the editor. Run `make aab` and `make check-aab` again before each upload.
+
+## Building behind a TLS-intercepting proxy
+
+On a company network that intercepts TLS (the author's is Netskope), the macOS keychain and `curl` trust the
+proxy's certificate authority, but the JDK does not. Gradle then fails to download its dependencies with
+`PKIX path building failed`. The fix is a truststore that holds the JDK's own certificates plus the proxy's:
+
+```bash
+tools/release/make_truststore.sh goskope      # a part of the proxy certificates' common names
+export JAVA_TOOL_OPTIONS="-Djavax.net.ssl.trustStore=$PWD/build/tls/truststore.jks -Djavax.net.ssl.trustStorePassword=changeit"
+pkill -f GradleDaemon                         # a daemon started earlier does not have the option
+make aab
+```
+
+- The script copies the JDK's `cacerts` (the JDK of `JAVA_HOME`, else the Makefile's Homebrew JDK 17, else
+  `/usr/libexec/java_home -v 17`), adds the certificates found with
+  `security find-certificate -a -c <name part> -p /Library/Keychains/System.keychain`, and writes
+  `build/tls/truststore.jks` (`build/` is not tracked). It refuses to overwrite an existing file and prints what it
+  wrote and the `export` line to use. Everything in it is public: the proxy's CA certificates and `changeit`, the
+  JDK's default `cacerts` password. List the names in the keychain with
+  `security find-certificate -a /Library/Keychains/System.keychain | grep labl`.
+- Set `JAVA_TOOL_OPTIONS` only in the terminal that builds: the Gradle daemon is started from it and inherits it,
+  and every JVM started from that terminal prints a "Picked up JAVA_TOOL_OPTIONS" line.
