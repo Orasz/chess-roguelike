@@ -26,12 +26,15 @@ func begin() -> void:
 	_show(_position(), "" if moves.is_empty() else moves[-1])
 	if _is_finished():
 		enemy_bar.emit(0.0 if outcome == RunState.Outcome.WON else 1.0)
+		_repeat_message()
 		await get_tree().process_frame
 		finished.emit(outcome)
 		return
 	enemy_bar.emit(1.0)
 	if moves.is_empty():
-		message.emit(_book.plans())
+		_say(_book.plans())
+	else:
+		_repeat_message()
 	_commit()
 	if _book.enemy_replies(moves).is_empty():
 		_set_input(true)
@@ -63,17 +66,21 @@ func _on_player_move(uci: String) -> void:
 	var options := _book.player_options(moves)
 	for option: Dictionary in options:
 		if option.move == uci:
-			await _play_book_move(uci)
+			await _play_book_move(uci, option.why)
 			return
 	_leave_the_book(options[0])
 
 
-## Plays `uci`, a move of the book. The player sees it before the enemy answers or the encounter
-## is won.
-func _play_book_move(uci: String) -> void:
+## Plays `uci`, a move of the book, whose hand-written explanation is `why`. The player sees it
+## before the enemy answers or the encounter is won, and reads why it is the book's move, or that
+## the line is complete.
+func _play_book_move(uci: String, why: Dictionary) -> void:
 	moves.append(uci)
 	if _book.is_complete(moves):
 		outcome = RunState.Outcome.WON
+		_say(tr("Line complete! You played the %s to the end.") % _book.name())
+	else:
+		_say(_book.text(why))
 	_commit()
 	_show(_position(), uci)
 	if _is_finished():
@@ -101,12 +108,12 @@ func _reply() -> void:
 func _leave_the_book(main: Dictionary) -> void:
 	_show(_fen, "")
 	arrow.emit(main.move)
-	message.emit(tr("That leaves the book.") + " " + _book.text(main.why))
+	_say(tr("That leaves the book.") + " " + _book.text(main.why))
 	var ply := moves.size()
 	if not _punished.has(ply):
 		_punished.append(ply)
 		run.take_damage(Tuning.THEORY_DAMAGE)
-		_commit()
+	_commit()
 	_set_input(true)
 
 

@@ -10,9 +10,16 @@ extends Encounter
 ## One search per enemy turn both charges the player's last move and gives the enemy's answer. Its
 ## result is applied without a pause, up to the commit, so no save holds the damage without the
 ## enemy's move: a kill during the search reruns it on resume, and the move is charged once.
+##
+## After an explained mistake the enemy's reply is saved at once but shown only after
+## `mistake_pause_s`, so the arrow and the sentence are read on the position they refer to. A kill
+## during that pause resumes on the position after the reply, with nothing left to search.
 
 ## How many moves the player has to win.
 var move_limit := Tuning.STRONG_MOVE_LIMIT
+## How long the enemy's reply waits after an explained mistake, in seconds. Tests and offline
+## tools set it to 0.
+var mistake_pause_s := Tuning.MISTAKE_PAUSE_S
 ## The line played from the record's FEN, starting with the enemy's first move.
 var moves := PackedStringArray()
 
@@ -47,13 +54,15 @@ func begin() -> void:
 	_show(_position(), moves[-1])
 	if _is_finished():
 		enemy_bar.emit(_bar_fraction())
+		_repeat_message()
 		await get_tree().process_frame
 		finished.emit(outcome)
 		return
 	if _cp_start == null:
-		message.emit(tr("%s blocks the way! Convert your advantage within %d moves.") % [enemy_name, move_limit])
+		_say(tr("%s blocks the way! Convert your advantage within %d moves.") % [enemy_name, move_limit])
 	else:
 		enemy_bar.emit(_bar_fraction())
+		_repeat_message()
 	_commit()
 	if not await _prepare_engine():
 		if is_inside_tree():
@@ -125,29 +134,33 @@ func _enemy_turn() -> void:
 	if lines.is_empty():
 		_withdraw()
 	else:
-		_apply_search(lines)
+		await _apply_search(lines)
 
 
 ## Charges the player's last move with the search's best line, then the enemy is beaten, escapes,
-## or answers with the line `MovePicker` chooses. Nothing here waits, so the commit that ends each
-## branch saves the damage together with what follows it.
+## or answers with the line `MovePicker` chooses. Nothing waits between the damage and the commit
+## that ends each branch, so that commit saves the damage together with what follows it. Only
+## after it may the reply wait out the mistake pause.
 func _apply_search(lines: Array) -> void:
 	var best := _best_line(lines)
 	var cp_after := -HpModel.eval_to_cp(best)
 	var damage := HpModel.player_damage(_cp_now, cp_after)
 	_cp_now = cp_after
 	run.take_damage(damage)
-	if damage >= Tuning.EXPLAIN_MIN_DAMAGE:
+	var explained := damage >= Tuning.EXPLAIN_MIN_DAMAGE
+	if explained:
 		_explain(best)
 	enemy_bar.emit(HpModel.enemy_fraction(cp_after, _cp_start))
 	if HpModel.is_decisive(cp_after, _cp_start):
 		_finish(RunState.Outcome.WON)
 	elif _player_moves >= move_limit:
 		run.take_damage(Tuning.STRONG_FAIL_DAMAGE)
-		message.emit(tr("%s escapes!") % enemy_name)
+		_say(tr("%s escapes!") % enemy_name)
 		_finish(RunState.Outcome.LOST)
 	else:
-		_play_enemy_move(lines[MovePicker.choose(lines, _enemy_elo, run.rng)])
+		# A run that died with this mistake has no reply to wait for: the run ends over it.
+		var pause_s := mistake_pause_s if explained and run.hp > 0 else 0.0
+		await _play_enemy_move(lines[MovePicker.choose(lines, _enemy_elo, run.rng)], pause_s)
 
 
 ## Shows the move the player should have played, and why the move played was a mistake. `best` is
@@ -158,19 +171,27 @@ func _explain(best: EngineEval) -> void:
 	var before := ChessRules.fen_after(_root_fen, moves.slice(0, -1))
 	var text := ExplanationBuilder.after_mistake(before, moves[-1], best)
 	if not text.is_empty():
-		message.emit(text)
+		_say(text)
 
 
 ## Plays the first move of `chosen`, one of the enemy's lines, and takes the line's evaluation and
 ## its next move as the new evaluation and hint. A mate ends the game lost and a draw drawn;
-## otherwise the player moves.
-func _play_enemy_move(chosen: EngineEval) -> void:
+## otherwise the player moves. The move is saved first, and then it waits `pause_s` seconds before
+## it is shown, unless it ends the game: the arrow and the explanation stay on the player's move
+## until then, and the arrow is cleared when the reply appears.
+func _play_enemy_move(chosen: EngineEval, pause_s := 0.0) -> void:
 	moves.append(chosen.pv[0])
 	_cp_now = -HpModel.eval_to_cp(chosen)
 	_hint = chosen.pv[1] if chosen.pv.size() > 1 else ""
 	_commit()
+	var status := ChessRules.status(_root_fen, moves)
+	if pause_s > 0.0 and status == ChessRules.Status.ONGOING:
+		await get_tree().create_timer(pause_s).timeout
+		if not is_inside_tree():
+			return
+		arrow.emit("")
 	_show(_position(), chosen.pv[0])
-	match ChessRules.status(_root_fen, moves):
+	match status:
 		ChessRules.Status.CHECKMATE:
 			_finish(RunState.Outcome.LOST)
 		ChessRules.Status.ONGOING:
@@ -227,7 +248,7 @@ func _search() -> Array:
 
 ## The opponent leaves when the engine fails it: a draw, with no damage.
 func _withdraw() -> void:
-	message.emit(tr("The opponent hesitates and withdraws."))
+	_say(tr("The opponent hesitates and withdraws."))
 	_finish(RunState.Outcome.DRAWN)
 
 

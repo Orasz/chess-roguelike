@@ -47,10 +47,12 @@ const START_POTIONS := 1
 const DROP_CHANCE := {"puzzle": 0.25, "theory": 1.0, "strong": 1.0}
 
 ## Battle: the pause before an opponent's move, how long an encounter waits for the engine to
-## explain a mistake, and the least damage, in HP, that a strong enemy's battle explains.
+## explain a mistake, the least damage, in HP, that a strong enemy's battle explains, and how long
+## its reply then waits so the explanation is read on the position it refers to.
 const OPPONENT_DELAY_S := 0.6
 const EXPLAIN_TIMEOUT_S := 5.0
 const EXPLAIN_MIN_DAMAGE := 5
+const MISTAKE_PAUSE_S := 1.5
 ## The most one frame adds to an engine wait, in seconds, so time in the background is one step.
 const MAX_WAIT_STEP_S := 0.25
 

@@ -31,15 +31,17 @@ func begin() -> void:
 	if _is_finished():
 		_show(_fen_after_player(_moves[1]), _moves[1])
 		enemy_bar.emit(0.0 if outcome == RunState.Outcome.WON else 1.0)
+		_repeat_message()
 		await get_tree().process_frame
 		finished.emit(outcome)
 		return
 	_show(_puzzle["fen"], "")
 	enemy_bar.emit(1.0)
+	_repeat_message()
 	_commit()
 	await get_tree().create_timer(opponent_delay_s).timeout
 	_show(_start_fen, _moves[0])
-	message.emit(tr("%s attacks! Find the best move.") % enemy_name)
+	_say(tr("%s attacks! Find the best move.") % enemy_name)
 	_set_input(true)
 
 
@@ -62,10 +64,10 @@ func _on_player_move(uci: String) -> void:
 
 func _win(uci: String) -> void:
 	outcome = RunState.Outcome.WON
+	_say(tr("Correct!"))
 	_commit()
 	_show(_fen_after_player(uci), uci)
 	enemy_bar.emit(0.0)
-	message.emit(tr("Correct!"))
 	finished.emit(outcome)
 
 
@@ -74,6 +76,8 @@ func _win(uci: String) -> void:
 func _lose(wrong_uci: String) -> void:
 	run.take_damage(Tuning.PUZZLE_DAMAGE)
 	outcome = RunState.Outcome.LOST
+	# A kill during the explanation must not resume with the opening line, which is no verdict.
+	_message = ""
 	_commit()
 	_show(_start_fen, "")
 	arrow.emit(_moves[1])
@@ -85,7 +89,8 @@ func _lose(wrong_uci: String) -> void:
 	if not sentence.is_empty():
 		parts.append(sentence)
 	parts.append(tr("The best move was %s.") % ChessRules.san(_start_fen, _moves[1]))
-	message.emit(" ".join(parts))
+	_say(" ".join(parts))
+	_commit()
 	finished.emit(outcome)
 
 

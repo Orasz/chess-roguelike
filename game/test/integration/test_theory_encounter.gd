@@ -60,7 +60,8 @@ func test_the_player_is_white():
 
 func test_begin_commits_the_battle():
 	enc.begin()
-	assert_eq(run.battle, {"id": "e1", "kind": "theory", "content": "italian_game", "moves": [], "punished": [], "outcome": -1})
+	assert_eq(run.battle, {"id": "e1", "kind": "theory", "content": "italian_game", "moves": [], "punished": [], "outcome": -1,
+		"message": book.plans()})
 
 func test_moves_are_ignored_until_input_is_enabled():
 	enc.submit_move("e2e4")
@@ -200,9 +201,12 @@ func test_restore_keeps_the_positions_already_charged():
 func test_snapshot_is_json_safe_and_restores_exactly():
 	enc.begin(); await _play("e2e4"); enc.submit_move("a2a3")
 	var saved := enc.snapshot()
-	assert_eq(saved, {"id": "e1", "kind": "theory", "content": "italian_game", "moves": ["e2e4", "e7e5"], "punished": [2], "outcome": -1})
+	assert_eq(saved, {"id": "e1", "kind": "theory", "content": "italian_game", "moves": ["e2e4", "e7e5"], "punished": [2], "outcome": -1,
+		"message": saved.message})
+	assert_string_starts_with(saved.message, "That leaves the book.")
 	var through_json: Dictionary = JSON.parse_string(JSON.stringify(run.battle))
-	assert_eq(through_json, {"id": "e1", "kind": "theory", "content": "italian_game", "moves": ["e2e4", "e7e5"], "punished": [2.0], "outcome": -1.0})
+	assert_eq(through_json, {"id": "e1", "kind": "theory", "content": "italian_game", "moves": ["e2e4", "e7e5"], "punished": [2.0], "outcome": -1.0,
+		"message": saved.message})
 	run = RunState.create(1, 1200, "italian_game"); _make()
 	enc.restore(through_json)
 	assert_eq(enc.snapshot(), saved)
@@ -229,3 +233,34 @@ func test_the_enemy_does_not_reply_once_the_encounter_left_the_tree():
 	assert_eq(enc.moves, PackedStringArray(["e2e4"]))
 	assert_eq(run.battle.moves, ["e2e4"])
 	enc.free()
+
+func test_book_moves_explain_themselves():
+	enc.begin(); await _play("e2e4")
+	var why: Dictionary = book.player_options(PackedStringArray())[0].why
+	assert_eq(get_signal_parameters(enc, "message")[0], book.text(why))
+	assert_eq(run.battle.message, book.text(why), "saved with the move")
+
+func test_completing_the_line_says_so():
+	enc.begin()
+	await _play_the_main_line()
+	assert_string_contains(get_signal_parameters(enc, "message")[0], book.name())
+	assert_eq(run.battle.message, get_signal_parameters(enc, "message")[0])
+
+func test_a_restored_battle_repeats_its_last_message():
+	enc.restore({"id": "e1", "kind": "theory", "content": "italian_game", "moves": ["e2e4", "e7e5"], "punished": [],
+		"outcome": -1, "message": "x"})
+	enc.begin()
+	assert_signal_emitted_with_parameters(enc, "message", ["x"]); assert_signal_emit_count(enc, "message", 1)
+
+func test_a_restored_finished_line_repeats_its_message():
+	enc.restore({"id": "e1", "kind": "theory", "content": "italian_game", "outcome": RunState.Outcome.WON,
+		"moves": ["e2e4", "e7e5", "g1f3", "b8c6", "f1c4", "g8f6", "d2d3", "f8c5", "c2c3", "d7d6", "e1g1"], "punished": [],
+		"message": "done"})
+	enc.begin()
+	assert_signal_emitted_with_parameters(enc, "message", ["done"])
+	await wait_for_signal(enc.finished, 2)
+
+func test_leaving_the_book_again_keeps_the_explanation_saved():
+	enc.begin(); enc.submit_move("d2d4"); enc.submit_move("a2a3")
+	assert_eq(run.battle.message, get_signal_parameters(enc, "message")[0])
+	assert_string_contains(run.battle.message, "That leaves the book.")

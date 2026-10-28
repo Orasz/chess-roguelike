@@ -144,7 +144,8 @@ func test_input_is_switched_off_when_a_move_is_accepted():
 
 func test_snapshot_is_json_safe():
 	await _start()
-	assert_eq(enc.snapshot(), {"id": "e1", "kind": "puzzle", "content": "p1", "outcome": -1})
+	assert_eq(enc.snapshot(), {"id": "e1", "kind": "puzzle", "content": "p1", "outcome": -1,
+		"message": "Greedy Pawn attacks! Find the best move."})
 	enc.submit_move("a1a8")
 	var through_json: Dictionary = JSON.parse_string(JSON.stringify(run.battle))
 	assert_eq([through_json.id, through_json.kind, through_json.content], ["e1", "puzzle", "p1"])
@@ -152,7 +153,7 @@ func test_snapshot_is_json_safe():
 
 func test_begin_commits_the_battle_before_the_opponent_moves():
 	enc.begin()
-	assert_eq(run.battle, {"id": "e1", "kind": "puzzle", "content": "p1", "outcome": -1})
+	assert_eq(run.battle, {"id": "e1", "kind": "puzzle", "content": "p1", "outcome": -1, "message": ""})
 	await wait_for_signal(enc.input_enabled, 2)
 
 func test_restored_finished_puzzle_does_not_damage_again():
@@ -190,3 +191,25 @@ func test_a_search_result_nobody_asked_for_is_ignored():
 	await wait_for_signal(enc.finished, 2)
 	fake.search_finished.emit("a8a8", [FakeEngine.line("a8a8", 0)])
 	assert_eq(enc._search_lines[0].pv[0], "g8f8")
+
+func test_restored_finished_puzzle_repeats_its_verdict():
+	enc.restore({"id": "e1", "kind": "puzzle", "content": "p1", "outcome": RunState.Outcome.LOST, "message": "M"})
+	enc.begin()
+	assert_signal_emitted_with_parameters(enc, "message", ["M"]); assert_signal_emit_count(enc, "message", 1)
+	await wait_for_signal(enc.finished, 2)
+
+func test_the_verdict_is_saved_with_the_outcome():
+	fake.replies = [[FakeEngine.line("g8f8", 0)]]
+	await _start(); enc.submit_move("a1a7")
+	await wait_for_signal(enc.finished, 2)
+	assert_eq(run.battle.message, get_signal_parameters(enc, "message")[0])
+	assert_string_contains(run.battle.message, "The best move was")
+
+func test_a_win_is_saved_with_its_message():
+	await _start(); enc.submit_move("a1a8")
+	assert_eq(run.battle.message, "Correct!")
+
+func test_a_kill_during_the_explanation_does_not_repeat_the_attack_message():
+	await _start(); enc.submit_move("a1a7")
+	assert_eq(run.battle.outcome, RunState.Outcome.LOST); assert_eq(run.battle.message, "")
+	await wait_for_signal(enc.finished, 2)

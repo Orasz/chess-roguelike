@@ -80,6 +80,7 @@ func _play(record: Dictionary, run: RunState, enemy_elo: int) -> Dictionary:
 	enc.encounter_id = String(record["id"])
 	enc.enemy_name = "Sim"
 	enc.engine_wait_s = _ENGINE_WAIT_S
+	enc.mistake_pause_s = 0.0
 	_player_turn = false
 	_outcome = -1
 	enc.input_enabled.connect(_on_input_enabled)

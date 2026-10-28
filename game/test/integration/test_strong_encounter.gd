@@ -27,6 +27,7 @@ func _create(position: Dictionary, first_reply: Array, enemy_elo := 2400) -> voi
 	fake = FakeEngine.new(); add_child_autofree(fake); fake.replies = [first_reply]
 	run = RunState.create(1, 1200, "italian_game")
 	enc = StrongEncounter.new(position, run, fake, enemy_elo); enc.encounter_id = "g"; enc.enemy_name = "Gatekeeper"
+	enc.mistake_pause_s = 0.0
 	watch_signals(enc); add_child_autofree(enc)
 
 func _make(position: Dictionary, first_reply: Array) -> void:
@@ -90,7 +91,7 @@ func test_move_limit_lets_the_enemy_escape():
 func test_restore_with_enemy_to_move_damages_once():
 	fake = FakeEngine.new(); add_child_autofree(fake); fake.replies = [[FakeEngine.line("b8c6", 300)]]
 	run = RunState.create(1, 1200, "italian_game")
-	enc = StrongEncounter.new(OPENING, run, fake, 2400); add_child_autofree(enc)
+	enc = StrongEncounter.new(OPENING, run, fake, 2400); enc.mistake_pause_s = 0.0; add_child_autofree(enc)
 	enc.restore({"id": "g", "kind": "strong", "content": "s1", "moves": ["e7e5", "b1c3"], "cp_start": 300,
 		"cp_now": 300, "player_moves": 1, "hint": "g1f3", "outcome": -1})
 	enc.begin(); await wait_for_signal(enc.input_enabled, 2)
@@ -123,6 +124,7 @@ func test_real_engine_plays_a_reply():
 	assert_true(await wait_for_signal(real_engine.ready_ok, 15), "ready_ok")
 	run = RunState.create(1, 1200, "italian_game")
 	enc = StrongEncounter.new(OPENING, run, real_engine, 2400); enc.encounter_id = "g"; enc.enemy_name = "Gatekeeper"
+	enc.mistake_pause_s = 0.0
 	watch_signals(enc); add_child_autofree(enc)
 	enc.begin(); assert_true(await wait_for_signal(enc.input_enabled, 15), "the opening eval")
 	enc.submit_move("g1f3")
@@ -149,7 +151,8 @@ func test_begin_commits_the_battle_before_the_opening_eval():
 	_create(OPENING, [FakeEngine.line("g1f3", 300)])
 	enc.begin()
 	assert_eq(run.battle, {"id": "g", "kind": "strong", "content": "s1", "moves": ["e7e5"], "cp_start": null,
-		"cp_now": 0, "player_moves": 0, "hint": "", "outcome": -1})
+		"cp_now": 0, "player_moves": 0, "hint": "", "outcome": -1,
+		"message": "Gatekeeper blocks the way! Convert your advantage within 12 moves."})
 	await wait_for_signal(enc.input_enabled, 2)
 
 func test_the_opening_eval_is_a_full_strength_search_of_the_player_to_move_position():
@@ -162,7 +165,8 @@ func test_the_opening_eval_is_a_full_strength_search_of_the_player_to_move_posit
 func test_the_opening_eval_is_committed_with_its_hint():
 	await _make(OPENING, [FakeEngine.line("g1f3", 300)])
 	assert_eq(run.battle, {"id": "g", "kind": "strong", "content": "s1", "moves": ["e7e5"], "cp_start": 300,
-		"cp_now": 300, "player_moves": 0, "hint": "g1f3", "outcome": -1})
+		"cp_now": 300, "player_moves": 0, "hint": "g1f3", "outcome": -1,
+		"message": "Gatekeeper blocks the way! Convert your advantage within 12 moves."})
 
 func test_the_player_is_the_side_that_moves_after_the_enemy():
 	_create(OPENING, [])
@@ -199,7 +203,8 @@ func test_the_damage_is_committed_with_the_enemy_reply():
 	enc.submit_move("b1c3"); await wait_for_signal(enc.input_enabled, 2)
 	assert_eq(run.hp, 75)
 	assert_eq(run.battle, {"id": "g", "kind": "strong", "content": "s1", "moves": ["e7e5", "b1c3", "b8c6"],
-		"cp_start": 300, "cp_now": -300, "player_moves": 1, "hint": "d2d4", "outcome": -1})
+		"cp_start": 300, "cp_now": -300, "player_moves": 1, "hint": "d2d4", "outcome": -1,
+		"message": "After Nc3, the best reply is Nc6."})
 	assert_eq(get_signal_parameters(enc, "board_changed"), [_fen_after(OPENING, ["e7e5", "b1c3", "b8c6"]), "b8c6"])
 	assert_signal_emit_count(enc, "board_changed", 3)
 
@@ -219,7 +224,8 @@ func test_a_small_loss_costs_hp_without_an_arrow_or_an_explanation():
 func test_a_mistake_without_a_hint_draws_no_arrow():
 	fake = FakeEngine.new(); add_child_autofree(fake); fake.replies = [[FakeEngine.line("b8c6", 300)]]
 	run = RunState.create(1, 1200, "italian_game")
-	enc = StrongEncounter.new(OPENING, run, fake, 2400); watch_signals(enc); add_child_autofree(enc)
+	enc = StrongEncounter.new(OPENING, run, fake, 2400); enc.mistake_pause_s = 0.0
+	watch_signals(enc); add_child_autofree(enc)
 	enc.restore({"id": "g", "kind": "strong", "content": "s1", "moves": ["e7e5", "b1c3"], "cp_start": 300,
 		"cp_now": 300, "player_moves": 1, "hint": "", "outcome": -1})
 	enc.begin(); await wait_for_signal(enc.input_enabled, 2)
@@ -366,3 +372,77 @@ func test_leaving_the_tree_during_the_search_changes_nothing():
 	assert_eq(run.hp, 100); assert_eq(run.battle.moves, ["e7e5", "b1c3"]); assert_eq(run.battle.outcome, -1)
 	assert_signal_not_emitted(enc, "finished")
 	enc.free()
+
+func test_mistake_reply_waits_and_clears_the_arrow():
+	await _make(OPENING, [FakeEngine.line("g1f3", 300)]); enc.mistake_pause_s = 0.3
+	fake.replies.append([FakeEngine.line("b8c6", 300)])
+	enc.submit_move("b1c3"); await wait_for_signal(enc.message, 2)
+	assert_eq(enc.moves[-1], "b8c6", "the reply is already saved"); assert_eq(run.battle.moves[-1], "b8c6")
+	assert_ne(get_signal_parameters(enc, "board_changed")[1], "b8c6", "not shown yet")
+	assert_signal_emitted_with_parameters(enc, "arrow", ["g1f3"])
+	await wait_for_signal(enc.input_enabled, 2)
+	assert_eq(get_signal_parameters(enc, "arrow")[0], ""); assert_eq(get_signal_parameters(enc, "board_changed")[1], "b8c6")
+
+func test_input_stays_off_during_the_mistake_pause():
+	await _make(OPENING, [FakeEngine.line("g1f3", 300)]); enc.mistake_pause_s = 0.3
+	fake.replies.append([FakeEngine.line("b8c6", 300)])
+	enc.submit_move("b1c3"); await wait_for_signal(enc.message, 2)
+	enc.submit_move("d2d4")
+	assert_eq(enc.moves.size(), 3, "a move during the pause is ignored")
+	assert_signal_emitted_with_parameters(enc, "input_enabled", [false])
+	await wait_for_signal(enc.input_enabled, 2)
+	assert_eq(enc.moves.size(), 3)
+
+func test_kill_during_the_mistake_pause_keeps_the_reply_and_charges_once():
+	await _make(OPENING, [FakeEngine.line("g1f3", 300)]); enc.mistake_pause_s = 5.0
+	fake.replies.append([FakeEngine.line("b8c6", 300)])
+	enc.submit_move("b1c3"); await wait_for_signal(enc.message, 2)
+	var saved: Dictionary = run.battle.duplicate(true); enc.free(); assert_eq(run.hp, 75)
+	var fake2 = FakeEngine.new(); add_child_autofree(fake2)
+	var again := StrongEncounter.new(OPENING, run, fake2, 2400); add_child_autofree(again)
+	again.restore(saved); again.begin(); await wait_for_signal(again.input_enabled, 2)
+	assert_eq(run.hp, 75); assert_eq(fake2.searches.size(), 0); assert_eq(again.moves[-1], "b8c6")
+	assert_eq(again.current_fen(), _fen_after(OPENING, ["e7e5", "b1c3", "b8c6"]))
+
+func test_a_mistake_that_kills_the_run_does_not_pause():
+	await _make(OPENING, [FakeEngine.line("g1f3", 300)]); enc.mistake_pause_s = 5.0
+	run.hp = 10
+	fake.replies.append([FakeEngine.line("b8c6", 300)])
+	enc.submit_move("b1c3"); await wait_for_signal(enc.input_enabled, 2)
+	assert_eq(run.hp, 0); assert_eq(enc.moves[-1], "b8c6")
+
+func test_a_small_loss_does_not_pause():
+	await _make(OPENING, [FakeEngine.line("g1f3", 300)]); enc.mistake_pause_s = 5.0
+	fake.replies.append([FakeEngine.line("b8c6", -200)])
+	enc.submit_move("b1c3"); await wait_for_signal(enc.input_enabled, 2)
+	assert_eq(enc.moves[-1], "b8c6")
+
+func test_being_mated_after_a_mistake_does_not_pause():
+	await _make(FOOLS_MATE, [FakeEngine.line("d2d4", 0)]); enc.mistake_pause_s = 5.0
+	fake.replies.append([FakeEngine.line("d8h4", 1, true)])
+	enc.submit_move("g2g4"); await wait_for_signal(enc.finished, 2)
+	assert_signal_emitted_with_parameters(enc, "finished", [RunState.Outcome.LOST])
+
+func test_restored_battle_repeats_its_last_message():
+	_create(OPENING, [])
+	enc.restore({"id": "g", "kind": "strong", "content": "s1", "moves": ["e7e5", "g1f3", "b8c6"], "cp_start": 300,
+		"cp_now": 300, "player_moves": 1, "hint": "", "outcome": -1, "message": "x"})
+	enc.begin()
+	assert_signal_emitted_with_parameters(enc, "message", ["x"]); assert_signal_emit_count(enc, "message", 1)
+	assert_eq(enc.snapshot().message, "x")
+	assert_signal_emitted_with_parameters(enc, "input_enabled", [true])
+
+func test_a_restored_finished_battle_repeats_its_message_after_showing_the_position():
+	_create(OPENING, [])
+	enc.restore({"id": "g", "kind": "strong", "content": "s1", "moves": ["e7e5", "g1f3"], "cp_start": 300,
+		"cp_now": 900, "player_moves": 1, "hint": "", "outcome": RunState.Outcome.WON, "message": "y"})
+	enc.begin()
+	assert_signal_emitted_with_parameters(enc, "message", ["y"])
+	await wait_for_signal(enc.finished, 2)
+
+func test_a_save_without_a_message_still_loads():
+	_create(OPENING, [])
+	enc.restore({"id": "g", "kind": "strong", "content": "s1", "moves": ["e7e5", "g1f3", "b8c6"], "cp_start": 300,
+		"cp_now": 300, "player_moves": 1, "hint": "", "outcome": -1})
+	assert_eq(enc.snapshot().message, "")
+	enc.begin(); assert_signal_not_emitted(enc, "message")

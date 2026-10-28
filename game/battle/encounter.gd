@@ -13,6 +13,8 @@ extends Node
 ## The position on the board changed. `last_move` is the move that led to it, or "" for none
 ## (the start, or a move taken back).
 signal board_changed(fen: String, last_move: String)
+## What the enemy or the teacher says now. `_say()` emits it, and `begin()` of a restored
+## encounter says the last text again.
 signal message(text: String)
 ## Shows the move `uci` as an arrow. "" clears it.
 signal arrow(uci: String)
@@ -43,6 +45,10 @@ var _input_on := false
 ## True from the moment `_run_search()` starts a search until its result or its timeout.
 var _awaiting_search := false
 var _search_lines: Array = []
+## The last text `_say()` said: the dialogue a resume shows again.
+var _message := ""
+## True once `restore()` has loaded a snapshot.
+var _restored := false
 
 
 ## Starts the encounter, or resumes it after `restore()`. A subclass emits `board_changed` for
@@ -70,16 +76,18 @@ func current_fen() -> String:
 
 
 ## What a save needs to resume the encounter: JSON-safe data (strings, numbers, booleans, arrays
-## and dictionaries only) that always has `"id"`, `"kind"` and `"outcome"`. A subclass adds its
-## own fields to the result of `super()`.
+## and dictionaries only) that always has `"id"`, `"kind"`, `"outcome"` and `"message"`, the last
+## text said. A subclass adds its own fields to the result of `super()`.
 func snapshot() -> Dictionary:
-	return {"id": encounter_id, "kind": _kind(), "outcome": outcome}
+	return {"id": encounter_id, "kind": _kind(), "outcome": outcome, "message": _message}
 
 
 ## Loads what `snapshot()` returned, before `begin()`. The snapshot may have gone through JSON,
 ## so numbers are converted with `int()`: a number there is a float.
 func restore(saved: Dictionary) -> void:
 	outcome = int(saved.get("outcome", -1))
+	_message = str(saved.get("message", ""))
+	_restored = true
 
 
 ## A subclass that overrides this must call `super()`.
@@ -100,6 +108,19 @@ func _exit_tree() -> void:
 ## Stores the snapshot in the run.
 func _commit() -> void:
 	run.set_battle(snapshot())
+
+
+## Says `text` and remembers it for the snapshot. Every encounter speaks through here.
+func _say(text: String) -> void:
+	_message = text
+	message.emit(text)
+
+
+## Says the last text again, when the encounter was restored and had said one. Every `begin()`
+## calls it once the position is on the board.
+func _repeat_message() -> void:
+	if _restored and not _message.is_empty():
+		message.emit(_message)
 
 
 ## Puts `fen` on the board and tells the screen.
