@@ -9,8 +9,12 @@ Reads the database's CSV on stdin and writes the subset as JSON on stdout:
 The output has two pools, both limited to one opening and to the puzzles that its
 `--side` solves:
 
-* `puzzles`: one-move puzzles (the `oneMove` theme, exactly two moves), for the basic enemies.
-* `strong`: positions with the `advantage` theme, for the strong enemy.
+* `puzzles`: every puzzle of at least two moves, for the basic enemies. A record keeps only
+  the first two moves (the opponent's, then the solution), and each band holds at most a set
+  share of mate-in-one rows.
+* `strong`: positions with the `advantage` theme, for the strong enemy. When an `evaluate`
+  function is given, a position is kept only if its evaluation after the opponent's first move
+  lies in a window, and the record stores it as `eval`.
 
 Each pool keeps the most popular rows of every rating band, so the file stays small. Only the
 standard library is used.
@@ -20,6 +24,8 @@ import argparse
 import csv
 import inspect
 import json
+import math
+import os
 import sys
 
 SOURCE = "Lichess puzzle database (CC0), https://database.lichess.org/"
@@ -49,6 +55,10 @@ def build(
     max_rd=90,
     min_popularity=80,
     min_plays=300,
+    max_mate_share=0.34,
+    evaluate=None,
+    strong_min_cp=150,
+    strong_max_cp=400,
 ):
     """Builds the subset from an iterable of CSV lines, header included.
 
@@ -58,6 +68,15 @@ def build(
     row whose FEN has black to move. Ratings run from `min_rating` (included) to `max_rating`
     (excluded), in bands of `band_width`; each band keeps its `per_band` most popular puzzles
     and its `strong_per_band` most popular strong positions.
+
+    A puzzle needs at least two moves and keeps the first two. Rows with the `mateIn1` theme
+    fill at most `floor(per_band * max_mate_share)` places of a band.
+
+    `evaluate(fen, first_move)` returns the solver's evaluation in centipawns after
+    `first_move`, or None for a mate or a failure. When it is given, each band walks its strong
+    candidates in ranking order until `strong_per_band` have an evaluation from `strong_min_cp`
+    to `strong_max_cp` (both included); the record gains `"eval"`. Without it, strong rows are
+    kept unfiltered and unscored.
 
     Raises ValueError when a required column is missing or `side` is unknown.
     """
@@ -88,6 +107,8 @@ def build(
             continue
         themes = row["Themes"].split()
         moves = row["Moves"].split()
+        if len(moves) < 2:
+            continue
         record = {
             "id": row["PuzzleId"],
             "fen": row["FEN"],
@@ -98,29 +119,63 @@ def build(
         # Sorts the most popular first; ties go to the most played, then to the lowest id.
         rank = (-int(row["Popularity"]), -int(row["NbPlays"]), row["PuzzleId"])
         band = (rating - min_rating) // band_width
-        if "oneMove" in themes and len(moves) == 2:
-            puzzles.setdefault(band, []).append((rank, record))
+        puzzles.setdefault(band, []).append((rank, dict(record, moves=moves[:2])))
         if "advantage" in themes:
             strong.setdefault(band, []).append((rank, record))
 
+    mate_cap = math.floor(per_band * max_mate_share)
     return {
         "version": 1,
         "source": SOURCE,
         "opening": opening,
         "side": side,
-        "puzzles": _top_of_each_band(puzzles, per_band),
-        "strong": _top_of_each_band(strong, strong_per_band),
+        "puzzles": _top_puzzles(puzzles, per_band, mate_cap),
+        "strong": _top_strong(strong, strong_per_band, evaluate, strong_min_cp, strong_max_cp),
     }
 
 
-def _top_of_each_band(bands, per_band):
-    """Keeps the first `per_band` ranked records of every band, sorted by rating and then id."""
+def _by_rating_then_id(kept):
+    kept.sort(key=lambda record: (record["rating"], record["id"]))
+    return kept
+
+
+def _top_puzzles(bands, per_band, mate_cap):
+    """Keeps the first `per_band` ranked puzzles of every band, with at most `mate_cap` mate-in-one."""
     kept = []
     for ranked in bands.values():
         ranked.sort(key=lambda item: item[0])
-        kept.extend(record for _, record in ranked[:per_band])
-    kept.sort(key=lambda record: (record["rating"], record["id"]))
-    return kept
+        mates = 0
+        in_band = 0
+        for _, record in ranked:
+            if in_band == per_band:
+                break
+            if "mateIn1" in record["themes"]:
+                if mates == mate_cap:
+                    continue
+                mates += 1
+            kept.append(record)
+            in_band += 1
+    return _by_rating_then_id(kept)
+
+
+def _top_strong(bands, per_band, evaluate, min_cp, max_cp):
+    """Keeps the first `per_band` ranked strong positions of every band that pass `evaluate`."""
+    kept = []
+    for ranked in bands.values():
+        ranked.sort(key=lambda item: item[0])
+        if evaluate is None:
+            kept.extend(record for _, record in ranked[:per_band])
+            continue
+        in_band = 0
+        for _, record in ranked:
+            if in_band == per_band:
+                break
+            score = evaluate(record["fen"], record["moves"][0])
+            if score is None or not min_cp <= score <= max_cp:
+                continue
+            kept.append(dict(record, eval=score))
+            in_band += 1
+    return _by_rating_then_id(kept)
 
 
 # Help text of the numeric flags. Each flag is the name of a `build` parameter, in kebab-case,
@@ -134,6 +189,8 @@ _INT_OPTIONS = {
     "max_rd": "highest RatingDeviation",
     "min_popularity": "lowest Popularity",
     "min_plays": "lowest NbPlays",
+    "strong_min_cp": "lowest evaluation of a strong position, in centipawns",
+    "strong_max_cp": "highest evaluation of a strong position, in centipawns",
 }
 
 
@@ -144,6 +201,22 @@ def _parse_args(argv):
     parser.add_argument("--opening", required=True, help="OpeningTags token, e.g. Italian_Game")
     parser.add_argument("--side", required=True, choices=("white", "black"), help="the side that solves")
     defaults = inspect.signature(build).parameters
+    parser.add_argument(
+        "--max-mate-share",
+        type=float,
+        default=defaults["max_mate_share"].default,
+        help="share of a band that mate-in-one puzzles may fill (default: %(default)s)",
+    )
+    parser.add_argument(
+        "--engine",
+        help="UCI engine binary that evaluates the strong positions; without it they are not filtered",
+    )
+    parser.add_argument(
+        "--strong-depth",
+        type=int,
+        default=14,
+        help="search depth of the strong-position evaluation (default: %(default)s)",
+    )
     for name, description in _INT_OPTIONS.items():
         parser.add_argument(
             "--" + name.replace("_", "-"),
@@ -155,9 +228,32 @@ def _parse_args(argv):
     return parser.parse_args(argv)
 
 
+def _engine_evaluator(engine, depth):
+    """Returns `evaluate(fen, first_move)` for `build`, searching to `depth` with `engine`."""
+
+    def evaluate(fen, first_move):
+        # After the first move the solver is the side to move, so its score is the engine's.
+        try:
+            return engine.search(fen, [first_move], depth=depth).cp
+        except (EOFError, OSError, ValueError):
+            return None
+
+    return evaluate
+
+
 def main(argv=None):
     options = vars(_parse_args(argv))
-    subset = build(sys.stdin, **options)
+    engine_path = options.pop("engine")
+    depth = options.pop("strong_depth")
+    if engine_path is None:
+        subset = build(sys.stdin, **options)
+    else:
+        # The engine driver lives next to this package; a script run puts only this directory on the path.
+        sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        from engine import uci
+
+        with uci.Engine(engine_path) as engine:
+            subset = build(sys.stdin, evaluate=_engine_evaluator(engine, depth), **options)
     sys.stdout.write(json.dumps(subset, indent=1, sort_keys=True) + "\n")
     return 0
 

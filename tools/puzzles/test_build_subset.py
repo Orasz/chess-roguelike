@@ -4,6 +4,8 @@ import random
 import unittest
 from unittest import mock
 
+from engine import uci
+
 from . import build_subset
 
 HEADER = "PuzzleId,FEN,Moves,Rating,RatingDeviation,Popularity,NbPlays,Themes,GameUrl,OpeningTags"
@@ -98,17 +100,119 @@ class BuildTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             build_subset.build([HEADER], "Italian_Game", "White")
 
-    def test_puzzles_pool_needs_exactly_two_moves(self):
-        result = build(row(id="longer", moves="e7e5 g1f3 b8c6 f1c4"))
+    def test_puzzles_pool_needs_at_least_two_moves(self):
+        result = build(row(id="single", moves="e7e5"))
         self.assertEqual(result["puzzles"], [])
 
-    def test_advantage_rows_go_to_the_strong_pool(self):
+    def test_long_puzzles_keep_only_the_first_two_moves(self):
+        result = build(row(id="longer", themes="mateIn2 long", moves="e7e5 g1f3 b8c6 f1c4"))
+        self.assertEqual(ids(result["puzzles"]), ["longer"])
+        self.assertEqual(result["puzzles"][0]["moves"], ["e7e5", "g1f3"])
+        self.assertEqual(result["puzzles"][0]["themes"], ["mateIn2", "long"])
+
+    def test_each_band_caps_mate_in_one(self):
+        result = build(
+            row(id="m1", popularity=99, themes="mateIn1 oneMove"),
+            row(id="m2", popularity=98, themes="mateIn1 oneMove"),
+            row(id="m3", popularity=97, themes="mateIn1 oneMove"),
+            row(id="other_a", popularity=90, themes="fork short"),
+            row(id="other_b", popularity=89, themes="pin short"),
+            per_band=3,
+            max_mate_share=0.34,
+        )
+        kept = result["puzzles"]
+        self.assertEqual(len(kept), 3)
+        self.assertEqual(sorted(ids(kept)), ["m1", "other_a", "other_b"])
+        self.assertEqual(sum("mateIn1" in record["themes"] for record in kept), 1)
+
+    def test_mate_in_one_cap_is_per_band(self):
+        result = build(
+            row(id="low", rating=650, themes="mateIn1 oneMove"),
+            row(id="high", rating=1250, themes="mateIn1 oneMove"),
+            per_band=3,
+            max_mate_share=0.34,
+        )
+        self.assertEqual(ids(result["puzzles"]), ["low", "high"])
+
+    def test_mate_in_one_cap_can_leave_a_band_short(self):
+        result = build(
+            row(id="m1", popularity=99, themes="mateIn1 oneMove"),
+            row(id="m2", popularity=98, themes="mateIn1 oneMove"),
+            per_band=3,
+            max_mate_share=0.34,
+        )
+        self.assertEqual(ids(result["puzzles"]), ["m1"])
+
+    def test_advantage_rows_also_go_to_the_strong_pool(self):
         result = build(
             row(id="adv", themes="advantage long", moves="e7e5 g1f3 b8c6 f1c4"),
         )
-        self.assertEqual(result["puzzles"], [])
         self.assertEqual(ids(result["strong"]), ["adv"])
         self.assertEqual(result["strong"][0]["themes"], ["advantage", "long"])
+        self.assertEqual(result["strong"][0]["moves"], ["e7e5", "g1f3", "b8c6", "f1c4"])
+        self.assertEqual(ids(result["puzzles"]), ["adv"])
+        self.assertEqual(result["puzzles"][0]["moves"], ["e7e5", "g1f3"])
+
+    def test_strong_positions_are_filtered_by_evaluation(self):
+        # The rows differ by their first move, so the fake can tell them apart.
+        evaluations = {"e7e5": 100, "d7d5": 200, "c7c5": 450}
+        calls = []
+
+        def evaluate(fen, first_move):
+            calls.append((fen, first_move))
+            return evaluations[first_move]
+
+        result = build(
+            row(id="low", themes="advantage long", moves="e7e5 g1f3 b8c6 f1c4"),
+            row(id="inside", themes="advantage long", moves="d7d5 g1f3 b8c6 f1c4"),
+            row(id="high", themes="advantage long", moves="c7c5 g1f3 b8c6 f1c4"),
+            evaluate=evaluate,
+            strong_min_cp=150,
+            strong_max_cp=400,
+        )
+        self.assertEqual(ids(result["strong"]), ["inside"])
+        self.assertEqual(result["strong"][0]["eval"], 200)
+        self.assertEqual(len(calls), 3)
+        self.assertEqual({fen for fen, _ in calls}, {FEN_BLACK_TO_MOVE})
+
+    def test_strong_band_stops_evaluating_once_full(self):
+        calls = []
+
+        def evaluate(fen, first_move):
+            calls.append(first_move)
+            return 200
+
+        build(
+            row(id="a", popularity=99, themes="advantage long", moves="e7e5 g1f3"),
+            row(id="b", popularity=98, themes="advantage long", moves="d7d5 g1f3"),
+            row(id="c", popularity=97, themes="advantage long", moves="c7c5 g1f3"),
+            evaluate=evaluate,
+            strong_per_band=2,
+        )
+        self.assertEqual(calls, ["e7e5", "d7d5"])
+
+    def test_strong_band_goes_down_the_ranking_past_rejected_rows(self):
+        evaluations = {"e7e5": 90, "d7d5": 200, "c7c5": 300}
+        result = build(
+            row(id="a", popularity=99, themes="advantage long", moves="e7e5 g1f3"),
+            row(id="b", popularity=98, themes="advantage long", moves="d7d5 g1f3"),
+            row(id="c", popularity=97, themes="advantage long", moves="c7c5 g1f3"),
+            evaluate=lambda fen, first_move: evaluations[first_move],
+            strong_per_band=2,
+        )
+        self.assertEqual(ids(result["strong"]), ["b", "c"])
+
+    def test_unevaluable_strong_rows_are_skipped(self):
+        result = build(
+            row(id="adv", themes="advantage long", moves="e7e5 g1f3 b8c6 f1c4"),
+            evaluate=lambda fen, first_move: None,
+        )
+        self.assertEqual(result["strong"], [])
+
+    def test_strong_rows_are_unfiltered_and_unscored_without_evaluate(self):
+        result = build(row(id="adv", themes="advantage long", moves="e7e5 g1f3 b8c6 f1c4"))
+        self.assertEqual(ids(result["strong"]), ["adv"])
+        self.assertNotIn("eval", result["strong"][0])
 
     def test_rating_range_is_half_open(self):
         result = build(
@@ -146,7 +250,7 @@ class BuildTest(unittest.TestCase):
         )
         self.assertEqual(ids(result["puzzles"]), ["low_1", "high_1"])
 
-    def test_output_is_sorted_and_deterministic(self):
+    def test_output_is_still_deterministic(self):
         rows = []
         for n in range(60):
             rows.append(
@@ -164,7 +268,16 @@ class BuildTest(unittest.TestCase):
             shuffled = rows[:]
             random.Random(seed).shuffle(shuffled)
             outputs.append(
-                json.dumps(build(*shuffled, per_band=3, strong_per_band=2), indent=1, sort_keys=True)
+                json.dumps(
+                    build(
+                        *shuffled,
+                        per_band=3,
+                        strong_per_band=2,
+                        evaluate=lambda fen, first_move: 150 + len(first_move) + int(fen[0] == "r"),
+                    ),
+                    indent=1,
+                    sort_keys=True,
+                )
             )
         self.assertEqual(outputs[0], outputs[1])
         result = json.loads(outputs[0])
@@ -188,6 +301,50 @@ class MainTest(unittest.TestCase):
         self.assertEqual(status, 0)
         result = json.loads(stdout.getvalue())
         self.assertEqual(ids(result["puzzles"]), ["b"])
+
+    def test_engine_flag_filters_the_strong_positions_with_that_engine(self):
+        class FakeEngine:
+            instances = []
+
+            def __init__(self, path):
+                self.path = path
+                self.searches = []
+                FakeEngine.instances.append(self)
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *exc):
+                pass
+
+            def search(self, fen, moves, depth=None, movetime_ms=None):
+                self.searches.append((fen, moves, depth))
+                return uci.Result(best="g1f3", cp=200 if moves == ["e7e5"] else None, mate=None)
+
+        stdin = io.StringIO(
+            "\n".join(
+                [
+                    HEADER,
+                    row(id="in_reach", themes="advantage long", moves="e7e5 g1f3"),
+                    row(id="mate", themes="advantage long", moves="d7d5 g1f3"),
+                ]
+            )
+            + "\n"
+        )
+        stdout = io.StringIO()
+        argv = ["--opening", "Italian_Game", "--side", "white", "--engine", "/fake/stockfish", "--strong-depth", "9"]
+        with mock.patch("sys.stdin", stdin), mock.patch("sys.stdout", stdout), mock.patch.object(
+            uci, "Engine", FakeEngine
+        ):
+            status = build_subset.main(argv)
+        self.assertEqual(status, 0)
+        engine = FakeEngine.instances[0]
+        self.assertEqual(engine.path, "/fake/stockfish")
+        self.assertEqual([search[1] for search in engine.searches], [["e7e5"], ["d7d5"]])
+        self.assertEqual({search[2] for search in engine.searches}, {9})
+        result = json.loads(stdout.getvalue())
+        self.assertEqual(ids(result["strong"]), ["in_reach"])
+        self.assertEqual(result["strong"][0]["eval"], 200)
 
 
 if __name__ == "__main__":

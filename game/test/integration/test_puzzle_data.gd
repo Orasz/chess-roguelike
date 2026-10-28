@@ -30,3 +30,17 @@ func test_every_rating_preset_is_served():
 		var strong := bank.pick("strong", rating, 1, rng)
 		assert_eq(strong.size(), 1)
 		assert_between(int(strong[0].rating), rating - 500, rating + 500)
+
+
+func test_mate_in_one_is_not_most_of_the_bank():
+	var bank := PuzzleBank.load_file(PATH)
+	var mates := 0
+	for p in bank.puzzles:
+		if "mateIn1" in p.themes:
+			mates += 1
+	assert_lt(float(mates) / bank.puzzles.size(), 0.40)
+
+
+func test_every_strong_position_starts_in_reach():
+	for p in PuzzleBank.load_file(PATH).strong:
+		assert_between(int(p.eval), 150, 400, p.id)

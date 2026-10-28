@@ -98,8 +98,16 @@ PUZZLE_DB := build/lichess_db_puzzle.csv.zst
 test-tools:
 	python3 -m unittest discover -s tools -p 'test_*.py'
 
-puzzles: $(PUZZLE_DB)
-	zstd -dc $(PUZZLE_DB) | python3 tools/puzzles/build_subset.py --opening Italian_Game --side white > game/data/puzzles/italian_game.json
+# The strong positions' evaluations come from the game's own engine (the light-net build), at a fixed depth
+# on one thread, so the output is reproducible. The file is written aside and moved only on success.
+PUZZLES_FILE := game/data/puzzles/italian_game.json
+
+puzzles: $(PUZZLE_DB) $(SF_OUT)/stockfish
+	set -o pipefail; \
+	zstd -dc $(PUZZLE_DB) | python3 tools/puzzles/build_subset.py --opening Italian_Game --side white \
+		--engine $(SF_OUT)/stockfish --strong-depth 14 > $(PUZZLES_FILE).tmp \
+	&& mv $(PUZZLES_FILE).tmp $(PUZZLES_FILE); \
+	status=$$?; rm -f $(PUZZLES_FILE).tmp; exit $$status
 
 # The patched tree must reproduce the node count of the patch's own commit (2793281 for sf_19 plus the
 # light-net patch), so a rebase onto a new Stockfish release is caught here. Stockfish prints the
