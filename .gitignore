@@ -4,6 +4,7 @@
 game/bin/macos/
 game/bin/android/
 native/*.nnue
+!native/nn-61e7af4bb97d.nnue
 *.os
 *.o
 .sconsign.dblite

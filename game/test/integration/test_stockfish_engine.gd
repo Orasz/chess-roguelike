@@ -101,3 +101,15 @@ func test_restart_after_stop():
 	assert_true(e.start())
 	e.send("isready")
 	assert_eq((await _collect_until(e, "readyok"))[-1], "readyok")
+
+
+## The build embeds the light net (decision 0003), and the engine names it when it loads it.
+func test_engine_runs_the_light_net():
+	var e := _new_engine()
+	assert_true(e.start())
+	for c in ["uci", "isready", "position startpos", "go movetime 100"]:
+		e.send(c)
+	var lines := await _collect_until(e, "bestmove", 30.0)
+	assert_true(lines[-1].begins_with("bestmove "), "the search must finish")
+	assert_true(Array(lines).any(func(l): return l.begins_with("info string NNUE evaluation using nn-61e7af4bb97d.nnue")),
+			"the engine must report the light net: " + "\n".join(lines))

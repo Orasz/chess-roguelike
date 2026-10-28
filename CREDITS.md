@@ -5,8 +5,17 @@ Everything the repository ships that someone else made, with its licence.
 ## Code
 
 - **Stockfish** (the chess engine, linked into the game as a GDExtension): GPLv3, by the
-  Stockfish developers. It is used unmodified, with its embedded NNUE net. The game as a whole is
-  GPLv3 for that reason: see [`LICENSE`](LICENSE). Source: <https://github.com/official-stockfish/Stockfish>.
+  Stockfish developers. The build is Stockfish `sf_19` plus the light-net patch below, with the
+  light net below. The game as a whole is GPLv3 for that reason: see [`LICENSE`](LICENSE).
+  Source: <https://github.com/official-stockfish/Stockfish>.
+
+- **Light-net patch for Stockfish** (`native/patches/sf19-light-net.patch`, applied to a copy of
+  Stockfish at build time): GPLv3, as part of Stockfish. Written by sscg13 ("simple mirrored piece
+  square features": the P_hm feature set, 768 inputs), rebased onto `sf_19` by Niklas Fiekas. It is the
+  patch that Lichess uses for its light Stockfish. Source:
+  <https://github.com/niklasf/Stockfish/commit/81348d3fb4f68bda5c442e7459de78ab00acbc55>
+  (the file is the commit's `.patch`, with a comment preamble on top that `git apply` ignores).
+  Why it is used: [`docs/decisions/0003-engine-net.md`](docs/decisions/0003-engine-net.md).
 
 - **Godot Engine** (the engine the game runs on, exported into the APK): MIT, by Juan Linietsky,
   Ariel Manzur and the Godot Engine contributors. Licence: <https://godotengine.org/license>.
@@ -20,6 +29,22 @@ Everything the repository ships that someone else made, with its licence.
 - Development only: **GUT** (the unit test framework, vendored in `game/addons/gut/`): MIT, by
   Tom "Butch" Wesley. Its licence is in [`game/addons/gut/LICENSE.md`](game/addons/gut/LICENSE.md).
   The export excludes it, so the APK does not ship it.
+
+## Engine net
+
+- **Stockfish light net `nn-61e7af4bb97d.nnue`** (1,166,381 bytes, `native/nn-61e7af4bb97d.nnue`,
+  embedded in the extension): a net of the Stockfish project, under CC0 by the fishtest upload
+  terms. Fishtest, the project's testing server, serves it
+  (<https://tests.stockfishchess.org/api/nn/nn-61e7af4bb97d.nnue>), and its upload page says: "By
+  uploading, you license your network under a CC0 license." (source:
+  `server/fishtest/templates/nn_upload.html.j2` in <https://github.com/official-stockfish/fishtest>).
+  The file was taken from the copy that Lichess vendors:
+  <https://raw.githubusercontent.com/lichess-org/dart-multistockfish/main/pkgs/multistockfish_light/ios/multistockfish_light/Sources/multistockfish_light/nnue/nn-61e7af4bb97d.nnue>.
+  Its SHA-256 is `61e7af4bb97d51eeeb25d322916f86513b5cd3a827ce189c98c6e31946f99e5b`. Stockfish's README
+  adds that its nets are trained on Leela Chess Zero data under the ODbL.
+  **To re-check before the public launch:** the net's own fishtest page (uploader, date) could not be
+  read, because it sits behind a browser check, so the CC0 licence rests on the upload terms alone.
+  See [`docs/decisions/0003-engine-net.md`](docs/decisions/0003-engine-net.md).
 
 ## Data
 

@@ -7,18 +7,52 @@ export ANDROID_HOME JAVA_HOME
 export GODOT_ANDROID_KEYSTORE_DEBUG_PATH := $(KEYSTORE)
 export GODOT_ANDROID_KEYSTORE_DEBUG_USER := androiddebugkey
 export GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD := android
-NET := nn-1a298aa575a0.nnue
+# The engine the game builds. Decision docs/decisions/0003-engine-net.md adopts the light net: Stockfish
+# sf_19 plus native/patches/sf19-light-net.patch, in a patched copy of the submodule, and the 1.1 MB net
+# that goes with it. SF_TREE is the Stockfish checkout to build and NET the net its evaluate.h embeds.
+# To build the full net instead (a 94 MB net, from the pristine submodule), override both:
+#   make SF_TREE=native/thirdparty/Stockfish NET=nn-1a298aa575a0.nnue BENCH_NODES=2497913 test
+SF_TREE ?= build/stockfish-light
+NET ?= nn-61e7af4bb97d.nnue
+LIGHT_TREE := build/stockfish-light
+LIGHT_PATCH := native/patches/sf19-light-net.patch
+SUBMODULE := native/thirdparty/Stockfish
+# sf_dir is relative to native/, where scons runs.
+SCONS_ENGINE := sf_dir=../$(SF_TREE)/src net=$(NET)
 
+# The light net is committed. The full net is downloaded by Stockfish's own makefile.
 net: native/$(NET)
 native/$(NET):
-	$(MAKE) -C native/thirdparty/Stockfish/src net
-	cp native/thirdparty/Stockfish/src/$(NET) native/$(NET)
+	@if [ "$(SF_TREE)" = "$(SUBMODULE)" ]; then \
+		$(MAKE) -C $(SUBMODULE)/src net && cp $(SUBMODULE)/src/$(NET) native/$(NET); \
+	else \
+		echo "native/$(NET) is missing"; exit 1; \
+	fi
 
-native-macos: net
-	scons -C native platform=macos arch=arm64 target=template_debug
+# The patched Stockfish tree: a copy of the pristine submodule with the light-net patch applied. The
+# submodule itself stays untouched. `git apply` run inside a subdirectory of another repository
+# silently ignores the paths, and `patch -p1` does not follow the renames, so the copy gets a throwaway
+# git repository of its own for the apply. The stamp holds the submodule revision and the patch's
+# hash: the tree is rebuilt only when one of them changes. Nothing happens for another SF_TREE.
+stockfish-tree:
+	@set -e; \
+	if [ "$(SF_TREE)" != "$(LIGHT_TREE)" ]; then exit 0; fi; \
+	key="$$(git -C $(SUBMODULE) rev-parse HEAD) $$(shasum -a 256 < $(LIGHT_PATCH))"; \
+	if [ -f $(LIGHT_TREE)/.patched ] && [ "$$(cat $(LIGHT_TREE)/.patched)" = "$$key" ]; then exit 0; fi; \
+	echo "Patching a copy of Stockfish into $(LIGHT_TREE)"; \
+	rm -rf $(LIGHT_TREE); \
+	mkdir -p $(LIGHT_TREE); \
+	rsync -a --exclude='.git' --exclude='*.o' --exclude='*.os' --exclude='*.nnue' $(SUBMODULE)/ $(LIGHT_TREE)/; \
+	git -C $(LIGHT_TREE) init -q; \
+	git -C $(LIGHT_TREE) apply "$(CURDIR)/$(LIGHT_PATCH)"; \
+	rm -rf $(LIGHT_TREE)/.git; \
+	echo "$$key" > $(LIGHT_TREE)/.patched
 
-native-android: net
-	scons -C native platform=android arch=arm64 target=template_debug
+native-macos: net stockfish-tree
+	scons -C native platform=macos arch=arm64 target=template_debug $(SCONS_ENGINE)
+
+native-android: net stockfish-tree
+	scons -C native platform=android arch=arm64 target=template_debug $(SCONS_ENGINE)
 
 apk: native-android import
 	mkdir -p build
@@ -40,12 +74,11 @@ import:
 	$(GODOT) --headless --path game --import
 
 # A desktop Stockfish for the offline tools, built out of tree so that the Stockfish checkout
-# stays untouched. SF_TREE is a Stockfish checkout (the submodule, or a patched copy of it): the
-# net its evaluate.h names is taken from native/ and embedded. SF_OUT receives the binary.
-SF_TREE ?= native/thirdparty/Stockfish
+# stays untouched. SF_TREE is built (see above): the net its evaluate.h names is taken from native/
+# and embedded. SF_OUT receives the binary.
 SF_OUT ?= build/stockfish
 
-stockfish-cli: net
+stockfish-cli: net stockfish-tree
 	@set -e; \
 	name=$$(grep -oE 'nn-[0-9a-f]{12}\.nnue' $(SF_TREE)/src/evaluate.h | head -1); \
 	test -f native/$$name || { echo "native/$$name is missing: copy the net that $(SF_TREE) embeds there"; exit 1; }; \
@@ -68,4 +101,14 @@ test-tools:
 puzzles: $(PUZZLE_DB)
 	zstd -dc $(PUZZLE_DB) | python3 tools/puzzles/build_subset.py --opening Italian_Game --side white > game/data/puzzles/italian_game.json
 
-.PHONY: net stockfish-cli native-macos native-android apk install logcat import test test-tools puzzles
+# The patched tree must reproduce the node count of the patch's own commit (2793281 for sf_19 plus the
+# light-net patch), so a rebase onto a new Stockfish release is caught here. Stockfish prints the
+# `bench` summary on stderr.
+BENCH_NODES ?= 2793281
+
+check-engine: stockfish-cli
+	@nodes=$$($(SF_OUT)/stockfish bench 2>&1 | sed -n 's/^Nodes searched *: *//p'); \
+	if [ "$$nodes" = "$(BENCH_NODES)" ]; then echo "bench: $$nodes nodes, as expected"; \
+	else echo "bench: $${nodes:-no node count} nodes, expected $(BENCH_NODES)"; exit 1; fi
+
+.PHONY: net stockfish-tree stockfish-cli check-engine native-macos native-android apk install logcat import test test-tools puzzles

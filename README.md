@@ -31,8 +31,13 @@ After cloning, fetch the submodules (godot-cpp and Stockfish):
 git submodule update --init
 ```
 
-The first `make test` downloads Stockfish's NNUE net (about 94 MiB) and builds the native
-extension, which takes a few minutes.
+The engine is Stockfish `sf_19` with the light net `nn-61e7af4bb97d` (1.1 MB), which needs a patch:
+[`native/patches/sf19-light-net.patch`](native/patches/sf19-light-net.patch). Both are committed, and
+`make` applies the patch to a copy of the submodule in `build/stockfish-light/`, so the submodule stays
+untouched. Why the game uses this net and not Stockfish's 94 MiB one is in
+[decision 0003](docs/decisions/0003-engine-net.md). The first `make test` builds that copy and the
+native extension, which takes a few minutes. `make check-engine` builds the desktop engine and checks
+that its `bench` reports 2793281 nodes. The Makefile says how to build the full net instead.
 
 To run the test suite headless, use:
 
