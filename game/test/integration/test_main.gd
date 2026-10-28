@@ -474,3 +474,29 @@ func test_back_during_the_enemy_search_keeps_the_move():
 	assert_true(await wait_for_signal(resumed_enc.input_enabled, 5), "the enemy answered")
 	assert_eq(fake.searches.size(), 1, "exactly one search on the new engine")
 	assert_eq(resumed_enc.moves.size(), played.size() + 1, "and the enemy's reply is appended")
+
+
+func test_about_opens_and_closes():
+	var main := _main()
+	_menu_button(main, "AboutButton").pressed.emit()
+	assert_true(main.current_screen() is AboutScreen)
+	(main.current_screen().get_node("%BackButton") as Button).pressed.emit()
+	await wait_process_frames(1)
+	assert_true(main.current_screen() is MainMenu)
+
+
+func test_back_on_the_about_screen_returns_to_the_menu():
+	var main := _main_that_counts_quits()
+	_menu_button(main, "AboutButton").pressed.emit()
+	assert_true(main.current_screen() is AboutScreen)
+	main._notification(NOTIFICATION_WM_GO_BACK_REQUEST)
+	assert_true(main.current_screen() is MainMenu)
+	assert_eq(quits, 0, "back on the About screen does not leave the app")
+
+
+func test_the_about_screen_keeps_a_saved_run():
+	var main: Main = await _main_with_a_saved_run()
+	_menu_button(main, "AboutButton").pressed.emit()
+	(main.current_screen().get_node("%BackButton") as Button).pressed.emit()
+	await wait_process_frames(1)
+	assert_true(_menu_button(main, "ContinueButton").visible, "the run is still saved")

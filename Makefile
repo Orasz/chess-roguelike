@@ -91,6 +91,12 @@ stockfish-cli: net stockfish-tree
 test: test-tools native-macos import
 	scripts/run_tests.sh "$(GODOT)"
 
+# The licence and the credits that the About screen shows ship in game/legal/ as copies of the files at
+# the root. tools/legal/test_legal_copies.py fails when a copy is stale; this refreshes them.
+legal:
+	cp LICENSE game/legal/GPL-3.0.txt
+	cp CREDITS.md game/legal/CREDITS.md
+
 # Offline tools: unit tests for the Python scripts, and the puzzle subset builder.
 # `puzzles` needs the Lichess dump in build/, which is not downloaded automatically: see CREDITS.md.
 PUZZLE_DB := build/lichess_db_puzzle.csv.zst
@@ -128,4 +134,4 @@ check-engine: stockfish-cli
 	if [ "$$nodes" = "$(BENCH_NODES)" ]; then echo "bench: $$nodes nodes, as expected"; \
 	else echo "bench: $${nodes:-no node count} nodes, expected $(BENCH_NODES)"; exit 1; fi
 
-.PHONY: net stockfish-tree stockfish-cli check-engine native-macos native-android apk install logcat import test test-tools puzzles strong-sim
+.PHONY: net stockfish-tree stockfish-cli check-engine native-macos native-android apk install logcat import test test-tools legal puzzles strong-sim

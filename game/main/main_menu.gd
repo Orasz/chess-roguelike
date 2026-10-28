@@ -3,12 +3,15 @@ extends Control
 ## The title screen. "Continue" resumes the saved run, and it is there only when a run is saved.
 ## Under "New run", one button per preset of `Tuning.RATING_PRESETS` starts a run at that rating.
 ## When a run is saved, the menu first asks the player to confirm that the saved run will be lost.
+## "About" opens the About screen.
 ## The texts are those of the scene, which the controls translate.
 
 ## The player chose to resume the saved run.
 signal continue_requested()
 ## The player chose a new run at `rating`.
 signal new_run_requested(rating: int)
+## The player chose "About".
+signal about_requested()
 
 ## Whether there is a saved run to continue. Set it before the menu enters the tree.
 var can_continue := false
@@ -28,6 +31,7 @@ func _ready() -> void:
 	_continue_button.pressed.connect(continue_requested.emit)
 	for button: Button in _presets:
 		button.pressed.connect(_on_preset_pressed.bind(_presets[button]))
+	(%AboutButton as Button).pressed.connect(about_requested.emit)
 	(%StartNewRunButton as Button).pressed.connect(_on_start_new_run_pressed)
 	(%CancelButton as Button).pressed.connect(_confirm_new_run.hide)
 

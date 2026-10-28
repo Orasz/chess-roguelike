@@ -51,6 +51,10 @@ make test
 rebuilds the puzzle subset in `game/data/puzzles/` from the Lichess dump (see
 [`CREDITS.md`](CREDITS.md) for where to get it).
 
+The About screen shows the licence and the credits from copies in `game/legal/`, which the Android
+export ships. After editing `LICENSE` or `CREDITS.md`, run `make legal` to refresh the copies;
+`make test-tools` fails when they differ. The privacy policy is [`PRIVACY.md`](PRIVACY.md).
+
 ## Android setup
 
 The commands below set up the Android build on macOS (Apple Silicon). Homebrew installs avoid

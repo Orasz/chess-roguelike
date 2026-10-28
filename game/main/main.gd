@@ -12,6 +12,7 @@ const _MENU_SCENE := preload("res://main/main_menu.tscn")
 const _OVERWORLD_SCENE := preload("res://overworld/overworld.tscn")
 const _BATTLE_SCENE := preload("res://battle/battle_screen.tscn")
 const _RUN_END_SCENE := preload("res://main/run_end.tscn")
+const _ABOUT_SCENE := preload("res://main/about_screen.tscn")
 const _PUZZLES_PATH := "res://data/puzzles/italian_game.json"
 const _BOOK_PATH := "res://data/openings/italian_game.json"
 
@@ -71,6 +72,7 @@ func show_menu() -> void:
 	menu.can_continue = _saved_run() != null
 	menu.continue_requested.connect(_on_continue_requested)
 	menu.new_run_requested.connect(_on_new_run_requested)
+	menu.about_requested.connect(_show_about)
 	_show_screen(menu)
 
 
@@ -133,14 +135,14 @@ func _fit_window() -> void:
 	root.content_scale_aspect = ScreenFit.aspect_for(root.size)
 
 
-## The Back button goes back one screen: from the overworld, a battle or the end of a run to the
-## menu, with the run kept, and from the menu out of the app, unless the menu has a question open
+## The Back button goes back one screen: from the overworld, a battle, the end of a run or the About
+## screen to the menu, with the run kept, and from the menu out of the app, unless the menu has a question open
 ## to close first. It never leaves the app from a battle.
 func _go_back() -> void:
 	if _screen is MainMenu:
 		if not (_screen as MainMenu).handle_back():
 			quit_app.call()
-	elif _screen is Overworld or _screen is BattleScreen or _screen is RunEnd:
+	elif _screen is Overworld or _screen is BattleScreen or _screen is RunEnd or _screen is AboutScreen:
 		show_menu()
 	else:
 		quit_app.call()
@@ -223,6 +225,12 @@ func _show_run_end(won: bool) -> void:
 	var screen: RunEnd = _RUN_END_SCENE.instantiate()
 	screen.won = won
 	screen.back_requested.connect(show_menu)
+	_show_screen(screen)
+
+
+func _show_about() -> void:
+	var screen: AboutScreen = _ABOUT_SCENE.instantiate()
+	screen.closed.connect(show_menu)
 	_show_screen(screen)
 
 
