@@ -76,6 +76,9 @@ msgstr ""
 msgid "Correct!"
 msgstr ""
 
+msgid "Decisive advantage! %s is beaten."
+msgstr ""
+
 msgid "Defeat"
 msgstr ""
 
@@ -125,6 +128,9 @@ msgid "Line complete! You played the %s to the end."
 msgstr ""
 
 msgid "Mate in one"
+msgstr ""
+
+msgid "Moves left: %d"
 msgstr ""
 
 msgid "New run"

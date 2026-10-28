@@ -267,6 +267,33 @@ func test_the_escape_message_names_the_enemy():
 	assert_signal_emitted_with_parameters(enc, "message", ["Gatekeeper escapes!"])
 	assert_eq(enc.moves.size(), 2, "the enemy does not move"); assert_eq(run.battle.outcome, RunState.Outcome.LOST)
 
+func test_a_decisive_win_says_so_by_name():
+	await _make(OPENING, [FakeEngine.line("g1f3", 300)])
+	fake.replies.append([FakeEngine.line("b8c6", -900)])
+	enc.submit_move("g1f3"); await wait_for_signal(enc.finished, 2)
+	assert_signal_emitted_with_parameters(enc, "message", ["Decisive advantage! Gatekeeper is beaten."])
+	assert_eq(run.battle.message, "Decisive advantage! Gatekeeper is beaten.")
+
+func test_a_fresh_battle_announces_every_move_it_has_left():
+	await _make(OPENING, [FakeEngine.line("g1f3", 300)])
+	assert_signal_emitted_with_parameters(enc, "moves_left", [Tuning.STRONG_MOVE_LIMIT])
+
+func test_a_move_counts_down_the_moves_left_before_the_search_answers():
+	await _make(OPENING, [FakeEngine.line("g1f3", 300)])
+	fake.replies.append([FakeEngine.line("b8c6", 300)])
+	enc.submit_move("g1f3")
+	assert_eq(get_signal_parameters(enc, "moves_left"), [Tuning.STRONG_MOVE_LIMIT - 1], "before the enemy answers")
+	await wait_for_signal(enc.input_enabled, 2)
+	assert_signal_emit_count(enc, "moves_left", 2)
+
+func test_a_restored_battle_announces_the_moves_it_has_left():
+	_create(OPENING, [])
+	enc.restore({"id": "g", "kind": "strong", "content": "s1", "moves": ["e7e5", "g1f3", "b8c6"], "cp_start": 300,
+		"cp_now": 300, "player_moves": 5, "hint": "", "outcome": -1})
+	enc.begin()
+	assert_signal_emitted_with_parameters(enc, "moves_left", [Tuning.STRONG_MOVE_LIMIT - 5])
+	assert_signal_emit_count(enc, "moves_left", 1)
+
 func test_a_search_without_lines_makes_the_opponent_withdraw():
 	await _make(OPENING, [FakeEngine.line("g1f3", 300)])
 	fake.replies.append([])

@@ -2,6 +2,7 @@ extends GutTest
 ## The battle screen renders an encounter's signals and forwards the player's moves. A stub
 ## encounter stands in for the real ones: it emits what the test tells it to, and records the moves.
 
+const FakeEngine := preload("res://test/support/fake_engine.gd")
 const START := UciEngine.START_FEN
 const AFTER_E4 := "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
 
@@ -216,6 +217,33 @@ func test_the_player_bar_tweens_to_the_new_hp():
 	assert_eq(_bar("PlayerHp").value, 60.0)
 	run.set_player_tile(Vector2i(1, 1))
 	assert_eq(_bar("PlayerHp").value, 60.0, "a change that is not HP leaves the bar alone")
+
+func _strong_screen() -> StrongEncounter:
+	var engine := FakeEngine.new()
+	add_child_autofree(engine)
+	engine.replies = [[FakeEngine.line("g1f3", 300)]]
+	var strong := StrongEncounter.new({"id": "s1", "fen": "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1",
+		"moves": ["e7e5", "g1f3"]}, run, engine, 2400)
+	strong.encounter_id = "s1"
+	strong.enemy_name = "Gatekeeper"
+	return strong
+
+func test_the_moves_left_label_is_hidden_unless_the_encounter_counts_moves():
+	assert_false((screen.get_node("%MovesLeft") as Label).visible, "a puzzle encounter never shows it")
+
+func test_a_strong_encounter_shows_the_moves_left():
+	var strong := _strong_screen()
+	var other := load("res://battle/battle_screen.tscn").instantiate() as BattleScreen
+	window.add_child(other)
+	other.open(strong, run)
+	await wait_process_frames(2)
+	var label: Label = other.get_node("%MovesLeft")
+	assert_true(label.visible)
+	assert_eq(label.text, "Moves left: %d" % Tuning.STRONG_MOVE_LIMIT)
+	strong.moves_left.emit(7)
+	assert_eq(label.text, "Moves left: 7")
+	strong.finished.emit(RunState.Outcome.WON)
+	assert_false(label.visible, "the Continue button takes its room")
 
 func test_roster_is_deterministic():
 	var first := EnemyRoster.for_encounter("puzzle", "3_41")

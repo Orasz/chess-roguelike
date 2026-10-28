@@ -15,6 +15,10 @@ extends Encounter
 ## `mistake_pause_s`, so the arrow and the sentence are read on the position they refer to. A kill
 ## during that pause resumes on the position after the reply, with nothing left to search.
 
+## How many moves the player has left before the enemy escapes: `move_limit` less the moves made.
+## Emitted once `begin()` has shown the position, fresh or restored, and after each accepted move.
+signal moves_left(count: int)
+
 ## How many moves the player has to win.
 var move_limit := Tuning.STRONG_MOVE_LIMIT
 ## How long the enemy's reply waits after an explained mistake, in seconds. Tests and offline
@@ -52,6 +56,7 @@ func _init(position: Dictionary, run: RunState, engine: UciEngine, enemy_elo: in
 
 func begin() -> void:
 	_show(_position(), moves[-1])
+	moves_left.emit(move_limit - _player_moves)
 	if _is_finished():
 		enemy_bar.emit(_bar_fraction())
 		_repeat_message()
@@ -110,6 +115,7 @@ func _on_player_move(uci: String) -> void:
 	_player_moves += 1
 	_commit()
 	_show(_position(), uci)
+	moves_left.emit(move_limit - _player_moves)
 	await _after_player_move()
 
 
@@ -152,6 +158,7 @@ func _apply_search(lines: Array) -> void:
 		_explain(best)
 	enemy_bar.emit(HpModel.enemy_fraction(cp_after, _cp_start))
 	if HpModel.is_decisive(cp_after, _cp_start):
+		_say(tr("Decisive advantage! %s is beaten.") % enemy_name)
 		_finish(RunState.Outcome.WON)
 	elif _player_moves >= move_limit:
 		run.take_damage(Tuning.STRONG_FAIL_DAMAGE)

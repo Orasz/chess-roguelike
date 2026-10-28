@@ -32,6 +32,7 @@ var _player_tween: Tween
 @onready var _player_hp: ProgressBar = %PlayerHp
 @onready var _player_hp_label: Label = %PlayerHpLabel
 @onready var _potion_button: Button = %PotionButton
+@onready var _moves_left: Label = %MovesLeft
 @onready var _dialogue: RichTextLabel = %Dialogue
 @onready var _continue_button: Button = %ContinueButton
 
@@ -69,6 +70,9 @@ func open(new_encounter: Encounter, new_run: RunState) -> void:
 	encounter.enemy_bar.connect(_on_enemy_bar)
 	encounter.input_enabled.connect(_on_input_enabled)
 	encounter.finished.connect(_on_finished)
+	# Only an encounter with a move limit counts the moves.
+	if encounter.has_signal("moves_left"):
+		encounter.connect("moves_left", _on_moves_left)
 	encounter.begin()
 
 
@@ -113,6 +117,11 @@ func _on_dialogue_input(event: InputEvent) -> void:
 		_dialogue.get_v_scroll_bar().value -= event.relative.y
 
 
+func _on_moves_left(count: int) -> void:
+	_moves_left.text = tr("Moves left: %d") % count
+	_moves_left.show()
+
+
 func _on_enemy_bar(fraction: float) -> void:
 	_enemy_tween = _tween_bar(_enemy_hp, fraction * 100.0, _enemy_tween)
 
@@ -126,6 +135,8 @@ func _on_input_enabled(on: bool) -> void:
 func _on_finished(outcome: int) -> void:
 	_outcome = outcome
 	_board.set_interactive(false)
+	# The Continue button takes the room the counter needs, and the count no longer matters.
+	_moves_left.hide()
 	_continue_button.show()
 
 

@@ -20,6 +20,12 @@ msgstr "%s ti sbarra la strada! Concretizza il vantaggio entro %d mosse."
 msgid "%s escapes!"
 msgstr "%s ti sfugge!"
 
+msgid "Decisive advantage! %s is beaten."
+msgstr "Vantaggio decisivo! %s è battuto."
+
+msgid "Moves left: %d"
+msgstr "Mosse rimaste: %d"
+
 msgid "About"
 msgstr "Informazioni"
 
