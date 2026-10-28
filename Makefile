@@ -123,17 +123,20 @@ check-aab: require-bundletool
 	@test -f "$(AAB)" || { echo "No bundle at $(AAB): run make aab, or pass AAB=<file>"; exit 1; }
 	python3 -m tools.release.check_aab "$(AAB)" --bundletool "$(BUNDLETOOL)"
 
-# Builds the APKs of the bundle for the connected phone, signed with the upload key, and installs them.
-# bundletool takes a password only from a file, so bash hands it a pipe (process substitution): the
-# password goes neither to disk nor to a command line.
-install-aab: require-release-keystore require-bundletool
+# Builds the APKs of the bundle for the connected phone and installs them. They are signed with
+# bundletool's default debug key, ~/.android/debug.keystore, which is created here with the public debug
+# values when it is missing: the upload key is used by `make aab` only and never reaches bundletool.
+ANDROID_DEBUG_KEYSTORE := $(HOME)/.android/debug.keystore
+
+install-aab: require-bundletool
 	@test -f "$(AAB)" || { echo "No bundle at $(AAB): run make aab, or pass AAB=<file>"; exit 1; }
+	@test -f "$(ANDROID_DEBUG_KEYSTORE)" || { \
+		mkdir -p "$(dir $(ANDROID_DEBUG_KEYSTORE))" && \
+		"$(JAVA_HOME)/bin/keytool" -genkeypair -keystore "$(ANDROID_DEBUG_KEYSTORE)" -storepass android \
+			-alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 \
+			-dname "CN=Android Debug,O=Android,C=US"; }
 	rm -f $(APKS)
-	@bash -c '$(BUNDLETOOL_RUN) build-apks --bundle="$(AAB)" --output=$(APKS) --connected-device \
-		--adb="$(ADB)" --ks="$$GODOT_ANDROID_KEYSTORE_RELEASE_PATH" \
-		--ks-key-alias="$$GODOT_ANDROID_KEYSTORE_RELEASE_USER" \
-		--ks-pass=file:<(printf %s "$$GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD") \
-		--key-pass=file:<(printf %s "$$GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD")'
+	$(BUNDLETOOL_RUN) build-apks --bundle="$(AAB)" --output=$(APKS) --mode=default --connected-device --adb="$(ADB)"
 	$(BUNDLETOOL_RUN) install-apks --apks=$(APKS) --adb="$(ADB)"
 
 # Godot 4.7.2's headless editor crashes when it discovers a GDExtension that is

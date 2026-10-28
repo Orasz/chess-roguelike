@@ -26,13 +26,15 @@ def manifest(package="io.example.play", code="3", target="36", extra=""):
 </manifest>"""
 
 
-def make_aab(directory, libs=(SO, "libc++_shared.so")):
+def make_aab(directory, libs=(SO, "libc++_shared.so"), deflated=()):
+    """A zip shaped like a bundle. Its libraries are stored, except the ones named in `deflated`."""
     path = Path(directory) / "fake.aab"
     with zipfile.ZipFile(path, "w") as bundle:
-        bundle.writestr("BundleConfig.pb", b"")
-        bundle.writestr("base/manifest/AndroidManifest.xml", b"")
+        bundle.writestr("BundleConfig.pb", b"", compress_type=zipfile.ZIP_DEFLATED)
+        bundle.writestr("base/manifest/AndroidManifest.xml", b"", compress_type=zipfile.ZIP_DEFLATED)
         for lib in libs:
-            bundle.writestr(f"base/lib/arm64-v8a/{lib}", b"not an elf")
+            method = zipfile.ZIP_DEFLATED if lib in deflated else zipfile.ZIP_STORED
+            bundle.writestr(f"base/lib/arm64-v8a/{lib}", b"not an elf" * 100, compress_type=method)
     return path
 
 
@@ -61,9 +63,9 @@ def verdicts(results):
 
 
 class CheckBundleTest(unittest.TestCase):
-    def run_checks(self, tools, libs=(SO, "libc++_shared.so")):
+    def run_checks(self, tools, libs=(SO, "libc++_shared.so"), deflated=()):
         with tempfile.TemporaryDirectory() as directory:
-            aab = make_aab(directory, libs)
+            aab = make_aab(directory, libs, deflated)
             return check_aab.check_bundle(aab, EXPECTED, tools)
 
     def test_a_good_bundle_passes_every_check(self):
@@ -87,6 +89,15 @@ class CheckBundleTest(unittest.TestCase):
         tools = FakeTools(alignments={SO: []})
         results = self.run_checks(tools)
         self.assertTrue(any(not result.passed and SO in result.name for result in results))
+
+    def test_a_compressed_library_fails_the_stored_check_and_only_that_one(self):
+        results = self.run_checks(FakeTools(), deflated=("libc++_shared.so",))
+        failed = [result for result in results if not result.passed]
+        self.assertEqual([result.name for result in failed], ["every arm64-v8a library is stored uncompressed"])
+        self.assertIn("libc++_shared.so", failed[0].detail)
+
+    def test_stored_libraries_pass_the_stored_check(self):
+        self.assertTrue(verdicts(self.run_checks(FakeTools()))["every arm64-v8a library is stored uncompressed"])
 
     def test_a_missing_stockfish_library_fails(self):
         results = self.run_checks(FakeTools(), libs=("libc++_shared.so",))

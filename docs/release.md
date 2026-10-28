@@ -45,8 +45,8 @@ keytool -genkeypair -v -keystore ~/keys/chess-roguelike-upload.jks -alias upload
 - Keep a **backup** of the `.jks` file and of the password outside this repository and outside this computer (a
   password manager, an encrypted drive). Never commit them, paste them in a chat or a log, or write them in a
   Makefile or a file.
-- Nothing in the repository reads or stores the password. The build and the install read it from three
-  environment variables of your shell:
+- Nothing in the repository reads or stores the password. `make aab` reads it from three environment variables
+  of your shell, and it is the only target that uses the upload key:
 
 ```bash
 export GODOT_ANDROID_KEYSTORE_RELEASE_PATH="$HOME/keys/chess-roguelike-upload.jks"
@@ -63,7 +63,7 @@ terminal window does.
 ```bash
 make aab                 # builds, imports, installs the template, exports and signs the bundle
 make check-aab           # checks build/chess-roguelike-<version>.aab; pass AAB=<file> to check another one
-make install-aab         # builds the APKs for the USB phone, signed with the upload key, and installs them
+make install-aab         # builds the APKs for the USB phone, signed with the debug key, and installs them
 ```
 
 `make aab` stops at once, with a message, when one of the three variables is missing or the keystore file does not
@@ -75,11 +75,15 @@ exist. It builds the release engine library (`make native-android-release`) firs
 2. `libstockfish_gd.android.template_release.arm64.so` is in the bundle;
 3. every `base/lib/arm64-v8a/*.so` has only LOAD segments with `align 2**14` (16 KB), read with the NDK's
    `llvm-objdump -p`;
-4. the manifest has the Play id, the `versionCode` of the preset, `targetSdkVersion` 36 and no `uses-permission`.
+4. every one of those libraries is stored in the zip, not deflated (the 16 KB zip alignment depends on it);
+5. the manifest has the Play id, the `versionCode` of the preset, `targetSdkVersion` 36 and no `uses-permission`.
 
-`make install-aab` asks bundletool for the APKs of the connected phone, signs them with the same upload key and
-installs them: the same code path as a download from Play, unlike `make install`. Launch the app, play a move
-against the engine, and watch `make logcat` for `FATAL`.
+`make install-aab` asks bundletool for the APKs of the connected phone and installs them: the same split APKs
+a download from Play gives, unlike `make install`. They are signed with bundletool's default **debug key**,
+`~/.android/debug.keystore` (the target creates it with the public debug values, password `android`, when it is
+missing), so the upload key and its password never reach bundletool. For that reason this install cannot update
+a copy that came from Play, nor be updated by it: uninstall one before installing the other. Launch the app,
+play a move against the engine, and watch `make logcat` for `FATAL`.
 
 ## Uploading
 

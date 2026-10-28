@@ -7,6 +7,7 @@ It prints one PASS or FAIL line per condition and exits with 1 when any of them 
 * bundletool's `dump config` asks for 16 KB page alignment (PAGE_ALIGNMENT_16K);
 * the Stockfish library for the release template is in the bundle;
 * every arm64-v8a library has only LOAD segments aligned to 2**14, read with the NDK's llvm-objdump;
+* every arm64-v8a library is stored in the zip, not deflated;
 * the manifest carries the Play application id and the preset's versionCode, targets SDK 36 and declares
   no permission.
 
@@ -141,6 +142,11 @@ def check_libraries(aab: Path, tools) -> list[Result]:
         ]
         if not members:
             return results + [Result("the bundle has arm64-v8a libraries", False, f"nothing under {LIB_DIR}")]
+        # A deflated library cannot be mapped straight from the APK, and the 16 KB zip alignment needs it stored.
+        compressed = [Path(info.filename).name for info in members if info.compress_type != zipfile.ZIP_STORED]
+        results.append(
+            Result("every arm64-v8a library is stored uncompressed", not compressed, "compressed: " + ", ".join(compressed))
+        )
         with tempfile.TemporaryDirectory(prefix="check-aab-") as directory:
             for info in members:
                 library = Path(info.filename).name
